@@ -89,7 +89,7 @@ case "$n" in
        bash -c "helm --kube-context $CTX status web -n $ns -o json | grep -q '\"status\":\"deployed\"'"
   task "It runs 2 replicas, set through values" "Corre 2 réplicas, fijadas por values" \
        "helm upgrade web podinfo/podinfo -n $ns --reuse-values --set replicaCount=2" "helm upgrade web podinfo/podinfo -n $ns --reuse-values --set replicaCount=2" \
-       deploy_ready "$ns" web
+       deploy_ready "$ns" web-podinfo
   task "Release web is at revision 2 or later" "La release web va por la revisión 2 o posterior" \
        "An upgrade creates a new revision; helm history web -n $ns" "Un upgrade crea una revisión nueva; helm history web -n $ns" \
        bash -c "helm --kube-context $CTX history web -n $ns -o json | grep -q '\"revision\":2'" ;;
