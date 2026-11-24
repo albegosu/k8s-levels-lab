@@ -24,6 +24,8 @@ Cada nivel tiene su `README.es.md`.
 
 ## Dos mapas
 
+**Verlo en 3D:** un [clúster isométrico interactivo](https://albegosu.github.io/k8s-levels-lab/es.html) donde puedes escalar, borrar pods, desplegar una versión nueva, hacer drain de un nodo y añadir uno de Karpenter, y ver cómo reacciona cada controlador. Es un único HTML en [`docs/`](docs/es.html), así que también puedes abrirlo en local.
+
 Cómo funciona un clúster: todo pasa por la API. El control plane decide y los nodos ejecutan.
 
 ```mermaid

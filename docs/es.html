@@ -1,0 +1,578 @@
+<!doctype html>
+<html lang="es">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{padding-block:env(safe-area-inset-top,0px) env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}a{color:#6fb3ff}</style>
+<title>Kubernetes isométrico</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: isometric cluster on the left, concepts and controls on the right; one column under 960px. Single dark look, like a platform console. */
+:root{
+  --bg:#121416; --panel:#191c1f; --line:#2a2f34; --fg:#e8ebee; --muted:#98a1a9; --tag:#0e1012;
+  --web:#6fb3ff; --redis:#f0a35e; --logs:#b9a2f2; --dns:#a9b2ba; --warn:#ff7a6b;
+  --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:14px;line-height:1.5}
+.wrap{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:16px;box-sizing:border-box;min-height:100%;
+  padding-block:16px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+@media (max-width:960px){.wrap{grid-template-columns:minmax(0,1fr)}}
+.left{display:flex;flex-direction:column;gap:12px;min-width:0}
+header h1{font-family:var(--mono);font-size:15px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin:0}
+header p{margin:4px 0 0;color:var(--muted);max-width:70ch}
+.stage{position:relative;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--bg);min-width:0}
+.stage svg{display:block;width:100%;height:auto;user-select:none}
+.hud{position:absolute;top:10px;left:10px;display:flex;gap:6px;flex-wrap:wrap}
+.pill{font-family:var(--mono);font-size:11px;color:var(--muted);background:var(--tag);border:1px solid var(--line);border-radius:999px;padding:2px 9px;font-variant-numeric:tabular-nums}
+.pill.warn{color:var(--warn);border-color:var(--warn)}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:10px;height:10px;border-radius:2px;display:inline-block}
+.tip{position:absolute;pointer-events:none;background:var(--tag);border:1px solid #c9ced3;border-radius:4px;padding:6px 8px;font-family:var(--mono);font-size:11px;line-height:1.45;white-space:nowrap;z-index:2}
+.tip b{color:var(--fg);font-weight:600}
+.tip span{color:var(--muted)}
+.panel{display:flex;flex-direction:column;gap:12px;min-width:0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;min-width:0}
+.card h2{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--mono);font-size:11px;letter-spacing:.04em;text-transform:uppercase;background:var(--tag);color:var(--fg);border:1px solid var(--line);border-radius:4px;padding:5px 8px;cursor:pointer}
+.chip:hover{border-color:var(--muted)}
+.chip[aria-pressed="true"]{border-color:var(--fg);box-shadow:inset 0 0 0 1px var(--fg)}
+.detail .kicker{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.detail h3{margin:2px 0 8px;font-size:18px;font-weight:600;text-wrap:balance}
+.detail p{margin:0 0 10px}
+.cmd{font-family:var(--mono);font-size:12px;background:var(--tag);border:1px solid var(--line);border-radius:6px;padding:8px 10px;overflow-x:auto;white-space:pre;color:var(--fg)}
+.try{font-size:13px;color:var(--muted);margin-top:10px}
+.group{display:flex;flex-direction:column;gap:8px}
+.group + .group{margin-top:12px}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.label{font-size:12px;color:var(--muted)}
+button.act,select{font-family:var(--sans);font-size:13px;background:#22262a;color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:6px 10px;cursor:pointer}
+button.act:hover{border-color:var(--muted)}
+button.act:disabled{opacity:.4;cursor:default}
+button.act.ghost{background:transparent}
+:focus-visible{outline:2px solid var(--web);outline-offset:2px}
+.log{font-family:var(--mono);font-size:11px;line-height:1.55;max-height:220px;overflow:auto;margin:0;padding:0;list-style:none}
+.log li{display:grid;grid-template-columns:56px 74px minmax(0,1fr);gap:8px;color:var(--muted);padding:2px 0;border-bottom:1px solid #1f2327}
+.log li .r{color:var(--fg)}
+.log li.w .r{color:var(--warn)}
+.log li .m{overflow-wrap:anywhere}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <div class="left">
+    <header>
+      <h1>Kubernetes isométrico</h1>
+      <p>Un clúster como los de una plataforma EKS de producción: un nodo fijo de sistema y nodos de Karpenter en dos zonas. Elige un concepto para ver qué es dentro del clúster, o pulsa las acciones y mira cómo reacciona Kubernetes. <a href="index.html" hreflang="en">English</a> · <a href="https://github.com/albegosu/k8s-levels-lab">Repositorio</a></p>
+    </header>
+    <div class="stage" id="stage">
+      <div class="hud" id="hud"></div>
+      <svg id="scene" role="img" aria-label="Clúster de Kubernetes en vista isométrica"></svg>
+      <div class="tip" id="tip" hidden></div>
+    </div>
+    <div class="legend">
+      <span><i style="background:var(--web)"></i>shop-web · Deployment</span>
+      <span><i style="background:var(--redis)"></i>redis · StatefulSet</span>
+      <span><i style="background:var(--logs)"></i>log-agent · DaemonSet</span>
+      <span><i style="background:var(--dns)"></i>coredns · Deployment</span>
+      <span><i style="background:transparent;border:1px dashed var(--warn)"></i>Pending</span>
+    </div>
+  </div>
+
+  <aside class="panel">
+    <section class="card">
+      <h2>Conceptos</h2>
+      <div class="chips" id="chips"></div>
+    </section>
+    <section class="card detail" id="detail" aria-live="polite"></section>
+    <section class="card">
+      <h2>Acciones</h2>
+      <div class="group">
+        <span class="label">shop-web (stateless)</span>
+        <div class="row">
+          <button class="act" id="scaleUp">+1 réplica</button>
+          <button class="act" id="scaleDown">−1 réplica</button>
+          <button class="act" id="killWeb">Borrar un pod</button>
+          <button class="act" id="rollout">Desplegar v2</button>
+        </div>
+      </div>
+      <div class="group">
+        <span class="label">redis (stateful)</span>
+        <div class="row">
+          <button class="act" id="killRedis">Borrar redis-1</button>
+        </div>
+      </div>
+      <div class="group">
+        <span class="label">Nodos</span>
+        <div class="row">
+          <select id="nodeSel" aria-label="Nodo"></select>
+          <button class="act" id="cordon">Cordon</button>
+          <button class="act" id="drain">Drain</button>
+          <button class="act" id="uncordon">Uncordon</button>
+        </div>
+        <div class="row">
+          <button class="act" id="addNode">Karpenter crea un nodo</button>
+          <button class="act ghost" id="reset">Reiniciar</button>
+        </div>
+      </div>
+    </section>
+    <section class="card">
+      <h2>Eventos</h2>
+      <ul class="log" id="log"></ul>
+    </section>
+  </aside>
+</div>
+
+<script>
+(() => {
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const S = 22, C = Math.cos(Math.PI / 6);
+const P = (x, y, z = 0) => [(x - y) * C * S, (x + y) * 0.5 * S - z * S];
+const pts = a => a.map(p => P(p[0], p[1], p[2]).map(n => n.toFixed(1)).join(',')).join(' ');
+const BG = '#121416';
+const hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+const mix = (a, b, t) => { const A = hex(a), B = hex(b); return '#' + A.map((v, i) => Math.round(v * (1 - t) + B[i] * t).toString(16).padStart(2, '0')).join(''); };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+const WL = {
+  web: { kind: 'Deployment', name: 'shop-web', ns: 'shop', color: '#6fb3ff' },
+  redis: { kind: 'StatefulSet', name: 'redis', ns: 'shop', color: '#f0a35e' },
+  logs: { kind: 'DaemonSet', name: 'log-agent', ns: 'observability', color: '#b9a2f2' },
+  dns: { kind: 'Deployment', name: 'coredns', ns: 'kube-system', color: '#a9b2ba' }
+};
+const NEUTRAL = { top: '#3a3f45', left: '#24282c', right: '#2d3237', stroke: '#9aa3ab' };
+const SLOTS = 9, DS_SLOT = 8;
+
+let nodes, pods, pvcs, events, uid, sel, rolling, dirty = true, t0 = Date.now();
+const spec = { web: { replicas: 3, hash: '7d9f8' }, dns: { replicas: 2, hash: '5d78c' }, redis: { replicas: 2 } };
+
+function suffix() { const a = 'bcdfghjklmnpqrstvwxz2456789'; let s = ''; for (let i = 0; i < 5; i++) s += a[Math.floor(Math.random() * a.length)]; return s; }
+function ev(type, reason, msg) {
+  const s = Math.floor((Date.now() - t0) / 1000);
+  events.unshift({ t: `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`, type, reason, msg });
+  events.length = Math.min(events.length, 80);
+  renderLog();
+}
+
+function init() {
+  uid = 0; rolling = false; events = [];
+  spec.web.replicas = 3; spec.web.hash = '7d9f8';
+  nodes = [
+    { id: 'system-1', pool: 'system', zone: 'a', x: 0, cordoned: false, a: 1 },
+    { id: 'karpenter-1', pool: 'karpenter', zone: 'a', x: 8, cordoned: false, a: 1 },
+    { id: 'karpenter-2', pool: 'karpenter', zone: 'b', x: 16, cordoned: false, a: 1 }
+  ];
+  pvcs = { 'redis-0': { zone: 'a', x: 10.3, y: 8.7 }, 'redis-1': { zone: 'b', x: 18.3, y: 8.7 } };
+  pods = [];
+  reconcile();
+  for (const p of pods) { const [x, y] = target(p); p.px = x; p.py = y; p.a = 1; p.z = 0; }
+  events = [];
+  ev('Normal', 'Ready', 'Clúster listo: 3 nodos, 4 workloads');
+  dirty = true;
+}
+
+/* ---------- scheduler ---------- */
+const live = p => p.phase !== 'Terminating';
+const onNode = n => pods.filter(p => p.node === n.id);
+function freeSlot(n) {
+  const used = new Set(onNode(n).map(p => p.slot));
+  for (let i = 0; i < SLOTS; i++) if (i !== DS_SLOT && !used.has(i)) return i;
+  return -1;
+}
+function reason(pod, n) {
+  if (n.cordoned) return 'cordon';
+  if (pod.wl === 'dns' && n.pool !== 'system') return 'selector';
+  if ((pod.wl === 'web' || pod.wl === 'redis') && n.pool !== 'karpenter') return 'selector';
+  if (pod.wl === 'redis' && pvcs[pod.name] && pvcs[pod.name].zone !== n.zone) return 'zona del disco';
+  if (freeSlot(n) === -1) return 'sin hueco';
+  return '';
+}
+function schedule(pod) {
+  const fits = nodes.filter(n => !reason(pod, n));
+  if (!fits.length) {
+    const why = {};
+    nodes.forEach(n => { const r = reason(pod, n); why[r] = (why[r] || 0) + 1; });
+    const txt = Object.entries(why).map(([r, c]) => `${c} ${r}`).join(', ');
+    if (pod.phase !== 'Pending' || !pod.warned) ev('Warning', 'FailedScheduling', `pod/${pod.name}: 0/${nodes.length} nodos disponibles (${txt})`);
+    pod.phase = 'Pending'; pod.node = null; pod.slot = -1; pod.warned = true;
+    return false;
+  }
+  fits.sort((a, b) => (SLOTS - onNode(b).length) - (SLOTS - onNode(a).length));
+  const n = fits[0];
+  pod.node = n.id; pod.slot = freeSlot(n); pod.phase = 'Running'; pod.warned = false;
+  ev('Normal', 'Scheduled', `pod/${pod.name} → ${n.id}`);
+  return true;
+}
+function newPod(wl, name, hash) {
+  const p = { id: ++uid, wl, name, hash, node: null, slot: -1, phase: 'New', a: 0, z: 2.2, px: 0, py: 0 };
+  pods.push(p);
+  if (wl === 'logs') return p;
+  schedule(p);
+  const [x, y] = target(p); p.px = x; p.py = y;
+  return p;
+}
+function terminate(p, why) {
+  if (!p || !live(p)) return;
+  p.phase = 'Terminating';
+  ev('Normal', 'Killing', `pod/${p.name}${why ? ' · ' + why : ''}`);
+}
+
+/* ---------- controllers ---------- */
+function reconcile() {
+  for (const wl of ['dns', 'web']) {
+    if (wl === 'web' && rolling) continue;
+    const mine = pods.filter(p => p.wl === wl && live(p));
+    let diff = spec[wl].replicas - mine.length;
+    while (diff > 0) {
+      const p = newPod(wl, `${WL[wl].name}-${spec[wl].hash}-${suffix()}`, spec[wl].hash);
+      ev('Normal', 'SuccessfulCreate', `ReplicaSet ${WL[wl].name}-${spec[wl].hash} creó pod/${p.name}`);
+      diff--;
+    }
+    if (diff < 0) mine.slice(diff).forEach(p => terminate(p, 'scale down'));
+  }
+  for (let i = 0; i < spec.redis.replicas; i++) {
+    const name = `redis-${i}`;
+    if (!pods.some(p => p.name === name)) {
+      newPod('redis', name);
+      ev('Normal', 'SuccessfulCreate', `StatefulSet redis creó pod/${name} con su PVC data-${name}`);
+    }
+  }
+  for (const n of nodes) {
+    if (!pods.some(p => p.wl === 'logs' && p.node === n.id && live(p))) {
+      const p = newPod('logs', `log-agent-${suffix()}`);
+      p.node = n.id; p.slot = DS_SLOT; p.phase = 'Running';
+      const [x, y] = target(p); p.px = x; p.py = y;
+      ev('Normal', 'SuccessfulCreate', `DaemonSet log-agent creó pod/${p.name} en ${n.id}`);
+    }
+  }
+  pods.filter(p => p.phase === 'Pending').forEach(schedule);
+  dirty = true; renderHud();
+}
+
+/* ---------- actions ---------- */
+const $ = id => document.getElementById(id);
+$('scaleUp').onclick = () => { if (spec.web.replicas >= 14) return; spec.web.replicas++; ev('Normal', 'ScalingReplicaSet', `deployment/shop-web a ${spec.web.replicas} réplicas`); reconcile(); };
+$('scaleDown').onclick = () => { if (spec.web.replicas <= 1) return; spec.web.replicas--; ev('Normal', 'ScalingReplicaSet', `deployment/shop-web a ${spec.web.replicas} réplicas`); reconcile(); };
+$('killWeb').onclick = () => {
+  const c = pods.filter(p => p.wl === 'web' && p.phase === 'Running');
+  if (!c.length) return;
+  terminate(c[Math.floor(Math.random() * c.length)], 'kubectl delete');
+  reconcile();
+};
+$('killRedis').onclick = () => { terminate(pods.find(p => p.name === 'redis-1' && live(p)), 'kubectl delete'); reconcile(); };
+$('rollout').onclick = () => {
+  if (rolling) return;
+  rolling = true; $('rollout').disabled = true;
+  const next = spec.web.hash === '7d9f8' ? '9c4b2' : '7d9f8';
+  const version = next === '9c4b2' ? 'v2' : 'v1';
+  spec.web.hash = next;
+  ev('Normal', 'ScalingReplicaSet', `deployment/shop-web: nuevo ReplicaSet shop-web-${next} (${version}), maxSurge 1`);
+  const step = () => {
+    const old = pods.filter(p => p.wl === 'web' && live(p) && p.hash !== next);
+    if (!old.length) { rolling = false; $('rollout').disabled = false; $('rollout').textContent = version === 'v2' ? 'Volver a v1' : 'Desplegar v2'; ev('Normal', 'RolloutComplete', `deployment/shop-web en ${version}`); reconcile(); return; }
+    const p = newPod('web', `shop-web-${next}-${suffix()}`, next);
+    ev('Normal', 'SuccessfulCreate', `ReplicaSet shop-web-${next} creó pod/${p.name}`);
+    dirty = true; renderHud();
+    setTimeout(() => {
+      if (p.phase === 'Pending') { rolling = false; $('rollout').disabled = false; ev('Warning', 'RolloutStuck', 'el pod nuevo no cabe: el rollout espera'); reconcile(); return; }
+      terminate(old[0], `reemplazado por ${version}`); dirty = true;
+      setTimeout(step, reduce ? 50 : 900);
+    }, reduce ? 50 : 900);
+  };
+  step();
+};
+function selNode() { return nodes.find(n => n.id === $('nodeSel').value); }
+$('cordon').onclick = () => { const n = selNode(); if (!n || n.cordoned) return; n.cordoned = true; ev('Normal', 'NodeNotSchedulable', `node/${n.id} cordoned`); reconcile(); syncButtons(); };
+$('uncordon').onclick = () => { const n = selNode(); if (!n || !n.cordoned) return; n.cordoned = false; ev('Normal', 'NodeSchedulable', `node/${n.id} uncordoned`); reconcile(); syncButtons(); };
+$('drain').onclick = () => {
+  const n = selNode(); if (!n) return;
+  if (!n.cordoned) { n.cordoned = true; ev('Normal', 'NodeNotSchedulable', `node/${n.id} cordoned`); }
+  const out = onNode(n).filter(p => live(p) && p.wl !== 'logs');
+  ev('Normal', 'Drain', `node/${n.id}: expulsando ${out.length} pods (ignora DaemonSets)`);
+  out.forEach(p => terminate(p, 'evicted'));
+  reconcile(); syncButtons();
+};
+$('addNode').onclick = () => {
+  if (nodes.length >= 4) return;
+  const n = { id: 'karpenter-3', pool: 'karpenter', zone: 'b', x: 24, cordoned: false, a: 0 };
+  nodes.push(n);
+  ev('Normal', 'Launched', 'Karpenter: nodeclaim → node/karpenter-3 (zona b, spot)');
+  fillNodeSel(); reconcile(); syncButtons();
+};
+$('reset').onclick = () => { init(); $('rollout').textContent = 'Desplegar v2'; $('rollout').disabled = false; fillNodeSel(); syncButtons(); renderLog(); renderHud(); };
+$('nodeSel').onchange = syncButtons;
+function fillNodeSel() {
+  const cur = $('nodeSel').value;
+  $('nodeSel').innerHTML = nodes.map(n => `<option value="${n.id}">${n.id}</option>`).join('');
+  $('nodeSel').value = nodes.some(n => n.id === cur) ? cur : 'karpenter-2';
+}
+function syncButtons() {
+  const n = selNode();
+  $('cordon').disabled = !n || n.cordoned;
+  $('uncordon').disabled = !n || !n.cordoned;
+  $('addNode').disabled = nodes.length >= 4;
+}
+
+/* ---------- concepts ---------- */
+const CONCEPTS = [
+  { id: 'cluster', label: 'Clúster', kicker: 'La foto completa', title: 'Clúster',
+    text: 'Un conjunto de máquinas (los nodos) y un cerebro que las gobierna (el control plane). Tú describes lo que quieres y el clúster trabaja para que sea verdad. Lo normal es tener uno por entorno: dev, staging y producción.',
+    cmd: 'kubectl config current-context\nkubectl get nodes', tryit: 'Todo lo que ves en la escena es un único clúster.', on: () => true },
+  { id: 'cp', label: 'Control plane', kicker: 'El cerebro', title: 'Control plane',
+    text: 'El API server, etcd, el scheduler y los controladores. Es la única puerta: kubectl, Argo CD y los nodos hablan solo con la API. En EKS lo gestiona AWS y no ves sus máquinas.',
+    cmd: 'kubectl cluster-info', tryit: 'Pasa el ratón por los bloques del control plane.', on: o => o.t === 'cp' },
+  { id: 'node', label: 'Nodo', kicker: 'Una máquina', title: 'Nodo',
+    text: 'Una máquina (en EKS, una EC2) donde corren pods. Cada casilla del suelo es una unidad de requests: cuando se llenan, no entra nada más aunque la CPU real esté ociosa. system-1 es fijo; los de Karpenter aparecen y desaparecen según haga falta.',
+    cmd: 'kubectl get nodes -L karpenter.sh/nodepool,topology.kubernetes.io/zone', tryit: 'Escala shop-web hasta llenar los nodos de Karpenter.', on: o => o.t === 'node' },
+  { id: 'pod', label: 'Pod', kicker: 'La unidad mínima', title: 'Pod',
+    text: 'Uno o varios contenedores que comparten red y disco, siempre en un solo nodo. Es efímero: si muere, no resucita. Su controlador crea otro, normalmente con otro nombre y otra IP.',
+    cmd: 'kubectl get pods -A -o wide', tryit: 'Pasa el ratón por cualquier cubo para ver su nombre y su nodo.', on: o => o.t === 'pod' },
+  { id: 'deploy', label: 'Deployment', kicker: 'Stateless', title: 'Deployment: pods intercambiables',
+    text: 'Mantiene N copias idénticas. Da igual cuál atienda una petición o en qué nodo viva, así que se pueden borrar, mover y escalar sin cuidado. Es lo normal para webs y APIs como shop-web.',
+    cmd: 'kubectl get deploy -n shop\nkubectl scale deploy shop-web -n shop --replicas=5', tryit: 'Borra un pod de shop-web: vuelve otro con otro nombre, quizá en otro nodo.', on: o => o.t === 'pod' && (o.p.wl === 'web' || o.p.wl === 'dns'), tags: 'deploy' },
+  { id: 'rs', label: 'ReplicaSet', kicker: 'Una versión', title: 'ReplicaSet',
+    text: 'El Deployment crea un ReplicaSet por versión. El trozo del nombre después de shop-web- es el hash de ese ReplicaSet. En un rolling update el nuevo sube de uno en uno mientras el viejo baja.',
+    cmd: 'kubectl get rs -n shop\nkubectl rollout status deploy/shop-web -n shop', tryit: 'Pulsa «Desplegar v2» y mira cómo cambian los hashes.', on: o => o.t === 'pod' && o.p.wl === 'web', tags: 'rs' },
+  { id: 'sts', label: 'StatefulSet', kicker: 'Stateful', title: 'StatefulSet: pods con identidad',
+    text: 'Cada pod tiene nombre fijo (redis-0, redis-1) y su propio disco. Si muere redis-1, vuelve redis-1 con el mismo disco. Es lo que usan las bases de datos y colas que guardan datos.',
+    cmd: 'kubectl get sts,pvc -n shop', tryit: 'Borra redis-1: espera a que termine el viejo y vuelve con el mismo nombre y disco.', on: o => (o.t === 'pod' && o.p.wl === 'redis') || o.t === 'disk', tags: 'sts' },
+  { id: 'pvc', label: 'PVC y volumen', kicker: 'Disco', title: 'PersistentVolumeClaim',
+    text: 'Una petición de disco. En EKS se convierte en un volumen EBS, que vive en una sola zona. El pod que lo usa queda atado a esa zona: si allí no hay nodo con sitio, se queda Pending.',
+    cmd: 'kubectl get pvc,pv -n shop', tryit: 'Haz drain de karpenter-2: redis-1 no puede irse a la zona a.', on: o => o.t === 'disk' || (o.t === 'pod' && o.p.wl === 'redis') },
+  { id: 'ds', label: 'DaemonSet', kicker: 'Uno por nodo', title: 'DaemonSet',
+    text: 'Un pod en cada nodo, siempre: agentes de logs o de métricas. Cuando Karpenter añade un nodo, aparece su copia sola. El drain no los expulsa (--ignore-daemonsets) y toleran el cordon.',
+    cmd: 'kubectl get ds -A', tryit: 'Pulsa «Karpenter crea un nodo» y mira aparecer el agente.', on: o => o.t === 'pod' && o.p.wl === 'logs', tags: 'ds' },
+  { id: 'svc', label: 'Service', kicker: 'Dirección fija', title: 'Service y Gateway',
+    text: 'El Service es una dirección fija delante de pods que cambian. Elige pods por labels, no por nombre. El Gateway recibe el tráfico de fuera y, según la HTTPRoute, lo manda al Service.',
+    cmd: 'kubectl get svc,endpointslices -n shop', tryit: 'Borra un pod web: la línea salta sola al pod nuevo.', on: o => o.t === 'svc' || o.t === 'gw' || (o.t === 'pod' && o.p.wl === 'web') },
+  { id: 'ns', label: 'Namespace', kicker: 'Carpeta lógica', title: 'Namespace',
+    text: 'Separa nombres, permisos y cuotas: shop, observability, kube-system. No separa máquinas: pods de namespaces distintos comparten nodo, como ves en la escena.',
+    cmd: 'kubectl get pods -n shop\nkubectl get ns', tryit: 'Fíjate en las etiquetas: varios namespaces en el mismo nodo.', on: o => o.t === 'pod', tags: 'ns' },
+  { id: 'sched', label: 'Scheduler y Pending', kicker: 'Dónde va cada pod', title: 'Scheduler y Pending',
+    text: 'Para cada pod nuevo, descarta los nodos que no sirven (sin hueco, con cordon, otra zona u otro selector) y puntúa el resto. Si no queda ninguno, el pod espera en Pending. En EKS, Karpenter ve ese Pending y crea un nodo.',
+    cmd: 'kubectl get pods -A --field-selector=status.phase=Pending\nkubectl describe pod <pod>   # FailedScheduling', tryit: 'Escala shop-web a 14 y después pulsa «Karpenter crea un nodo».', on: o => o.t === 'node' || o.t === 'pend' || (o.t === 'pod' && o.p.phase === 'Pending') },
+  { id: 'drain', label: 'Cordon y drain', kicker: 'Vaciar un nodo', title: 'Cordon, drain y uncordon',
+    text: 'Cordon cierra el nodo a pods nuevos. Drain además expulsa los que tiene, y sus controladores los recrean en otros nodos. Uncordon lo vuelve a abrir, pero los pods no regresan solos.',
+    cmd: 'kubectl cordon karpenter-2\nkubectl drain karpenter-2 --ignore-daemonsets --delete-emptydir-data\nkubectl uncordon karpenter-2', tryit: 'Elige karpenter-1 y pulsa Drain.', on: o => o.t === 'node' || o.t === 'pend' }
+];
+sel = 'cluster';
+function renderChips() {
+  $('chips').innerHTML = CONCEPTS.map(c => `<button class="chip" data-c="${c.id}" aria-pressed="${c.id === sel}">${esc(c.label)}</button>`).join('');
+}
+$('chips').onclick = e => { const b = e.target.closest('[data-c]'); if (b) pick(b.dataset.c); };
+function pick(id) {
+  sel = id; renderChips();
+  const c = CONCEPTS.find(x => x.id === id);
+  $('detail').innerHTML = `<div class="kicker">${esc(c.kicker)}</div><h3>${esc(c.title)}</h3><p>${esc(c.text)}</p><div class="cmd">${esc(c.cmd)}</div><div class="try">Pruébalo: ${esc(c.tryit)}</div>`;
+  dirty = true;
+}
+
+/* ---------- geometry ---------- */
+function slotPos(n, s) { return [n.x + 0.45 + (s % 3) * 1.75, 0.45 + Math.floor(s / 3) * 1.75]; }
+function target(p) {
+  if (p.node) { const n = nodes.find(x => x.id === p.node); if (n) return slotPos(n, p.slot); }
+  const pend = pods.filter(q => q.phase === 'Pending');
+  const i = Math.max(0, pend.indexOf(p));
+  return [-9.6 + (i % 4) * 1.7, 8.4 + Math.floor(i / 4) * 1.7];
+}
+function box(x, y, z, w, d, h, c, extra = '') {
+  const t = [[x, y, z + h], [x + w, y, z + h], [x + w, y + d, z + h], [x, y + d, z + h]];
+  const l = [[x, y + d, z], [x + w, y + d, z], [x + w, y + d, z + h], [x, y + d, z + h]];
+  const r = [[x + w, y, z], [x + w, y + d, z], [x + w, y + d, z + h], [x + w, y, z + h]];
+  const s = `stroke="${c.stroke}" stroke-width="1" stroke-linejoin="round"${c.dash ? ' stroke-dasharray="3 3"' : ''}`;
+  return `<polygon points="${pts(l)}" fill="${c.left}" ${s}${extra}/><polygon points="${pts(r)}" fill="${c.right}" ${s}${extra}/><polygon points="${pts(t)}" fill="${c.top}" ${s}${extra}/>`;
+}
+function plate(x, y, w, d, fill, stroke, z = 0, extra = '') {
+  return `<polygon points="${pts([[x, y, z], [x + w, y, z], [x + w, y + d, z], [x, y + d, z]])}" fill="${fill}" stroke="${stroke}" stroke-width="1"${extra}/>`;
+}
+function tag(x, y, z, text, color = '#c9ced3', lift = 26) {
+  const [sx, sy] = P(x, y, z);
+  const w = text.length * 6.6 + 14;
+  return `<g pointer-events="none"><line x1="${sx}" y1="${sy}" x2="${sx}" y2="${sy - lift + 9}" stroke="${color}" stroke-width="1"/><rect x="${(sx - w / 2).toFixed(1)}" y="${(sy - lift - 9).toFixed(1)}" width="${w.toFixed(1)}" height="18" rx="3" fill="#0e1012" stroke="${color}"/><text x="${sx.toFixed(1)}" y="${(sy - lift + 4).toFixed(1)}" text-anchor="middle" font-family="JetBrains Mono, ui-monospace, Menlo, monospace" font-size="11" fill="#e8ebee" letter-spacing=".4">${esc(text.toUpperCase())}</text></g>`;
+}
+function podColors(p) {
+  const base = WL[p.wl].color;
+  if (p.phase === 'Pending') return { top: '#4a2a27', left: '#2a1a18', right: '#36201e', stroke: '#ff7a6b', dash: true };
+  return { top: mix(base, BG, 0.25), left: mix(base, BG, 0.62), right: mix(base, BG, 0.45), stroke: mix(base, '#ffffff', 0.35) };
+}
+
+/* bounds */
+const corners = [];
+for (const x of [-10.5, 31]) for (const y of [-5.5, 13.8]) for (const z of [0, 3.5]) corners.push(P(x, y, z));
+const minX = Math.min(...corners.map(c => c[0])) - 10, maxX = Math.max(...corners.map(c => c[0])) + 10;
+const minY = Math.min(...corners.map(c => c[1])) - 40, maxY = Math.max(...corners.map(c => c[1])) + 10;
+$('scene').setAttribute('viewBox', `${minX.toFixed(0)} ${minY.toFixed(0)} ${(maxX - minX).toFixed(0)} ${(maxY - minY).toFixed(0)}`);
+
+let grid = '';
+for (let x = -10; x <= 31; x++) { const a = P(x, -5.5), b = P(x, 13.8); grid += `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}"/>`; }
+for (let y = -5; y <= 13; y++) { const a = P(-10.5, y), b = P(31, y); grid += `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}"/>`; }
+grid = `<g stroke="#1d2125" stroke-width="1">${grid}</g>`;
+
+function render() {
+  const c = CONCEPTS.find(x => x.id === sel);
+  const on = o => c.on(o);
+  const op = o => on(o) ? 1 : 0.18;
+  let out = grid;
+
+  /* zones and plates */
+  out += plate(-0.7, -0.7, 15.4, 12.6, 'rgba(111,179,255,0.025)', '#2a3036');
+  out += plate(15.3, -0.7, 15.4, 12.6, 'rgba(240,163,94,0.025)', '#2a3036');
+  out += plate(0, 8.2, 14, 2.6, 'rgba(255,255,255,0.03)', '#30363c');
+  out += plate(16, 8.2, 14, 2.6, 'rgba(255,255,255,0.03)', '#30363c');
+  const pend = pods.filter(p => p.phase === 'Pending');
+  out += `<g opacity="${op({ t: 'pend' })}">` + plate(-10, 8, 7, 5.6, pend.length ? 'rgba(255,122,107,0.06)' : 'rgba(255,255,255,0.02)', pend.length ? '#ff7a6b' : '#30363c', 0, ' stroke-dasharray="4 4"') + '</g>';
+  out += `<g opacity="${op({ t: 'cp' })}">` + plate(-10, 0, 7, 6, 'rgba(255,255,255,0.03)', '#3a4046') + '</g>';
+  out += `<g opacity="${op({ t: 'svc' })}">` + plate(13, -4.6, 4, 2.4, 'rgba(111,179,255,0.10)', '#6fb3ff') + '</g>';
+
+  /* node slabs */
+  for (const n of nodes) {
+    const used = onNode(n).filter(live).length;
+    out += `<g data-id="node:${n.id}" opacity="${(op({ t: 'node', n }) * n.a).toFixed(2)}" style="cursor:pointer">`;
+    out += box(n.x, 0, 0, 6, 6, 0.5, NEUTRAL);
+    for (let s = 0; s < SLOTS; s++) { const [sx, sy] = slotPos(n, s); out += plate(sx - 0.1, sy - 0.1, 1.5, 1.5, 'none', '#4a5157', 0.5, s === DS_SLOT ? ' stroke-dasharray="2 3"' : ''); }
+    if (n.cordoned) out += plate(n.x, 0, 6, 6, 'url(#hatch)', '#ff7a6b', 0.5);
+    out += '</g>';
+  }
+
+  /* objects, back to front */
+  const objs = [];
+  for (const p of pods) {
+    const base = p.node ? 0.5 : 0.05;
+    objs.push({ k: p.px + p.py + 1.3, s: `<g data-id="pod:${p.id}" opacity="${(Math.max(0, Math.min(1, p.a)) * op({ t: 'pod', p })).toFixed(2)}" style="cursor:pointer">${box(p.px, p.py, base + p.z, 1.3, 1.3, 1.3, podColors(p))}</g>` });
+  }
+  for (const [k, d] of Object.entries(pvcs)) {
+    objs.push({ k: d.x + d.y + 1.4, s: `<g data-id="disk:${k}" opacity="${op({ t: 'disk' })}">${box(d.x, d.y, 0, 1.4, 1.4, 0.45, { top: mix('#f0a35e', BG, 0.55), left: mix('#f0a35e', BG, 0.8), right: mix('#f0a35e', BG, 0.7), stroke: mix('#f0a35e', BG, 0.25) })}</g>` });
+  }
+  const cpb = (id, x, y, w, d, h) => objs.push({ k: x + y + w, s: `<g data-id="cp:${id}" opacity="${op({ t: 'cp' })}">${box(x, y, 0, w, d, h, NEUTRAL)}</g>` });
+  cpb('api', -9.4, 0.6, 3, 3, 2.4); cpb('etcd', -5.6, 0.6, 1.9, 1.9, 1.2); cpb('scheduler', -5.6, 3.2, 1.9, 1.9, 1.2); cpb('controllers', -9.4, 4.2, 3, 1.3, 1);
+  objs.push({ k: 5.5 - 3.6, s: `<g data-id="gw:gateway" opacity="${op({ t: 'gw' })}">${box(5, -4.8, 0, 2.6, 2.6, 1.4, NEUTRAL)}</g>` });
+  objs.sort((a, b) => a.k - b.k);
+  out += objs.map(o => o.s).join('');
+
+  /* links */
+  let links = '';
+  for (const p of pods) {
+    if (p.wl !== 'redis' || !p.node || p.a < 0.3) continue;
+    const d = pvcs[p.name]; const a = P(p.px + 0.65, p.py + 1.3, 0.5), b = P(d.x + 0.7, d.y + 0.7, 0.45);
+    links += `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="#f0a35e" stroke-dasharray="3 4" opacity="${0.55 * op({ t: 'disk' })}"/>`;
+  }
+  if (sel === 'svc') {
+    const s0 = P(15, -3.4, 0.05);
+    const g0 = P(7.6, -3.5, 0.7);
+    links += `<line x1="${g0[0]}" y1="${g0[1]}" x2="${s0[0]}" y2="${s0[1]}" stroke="#e8ebee" stroke-width="1.5" marker-end="url(#arrow)"/>`;
+    for (const p of pods) if (p.wl === 'web' && p.phase === 'Running' && p.a > 0.5) {
+      const t = P(p.px + 0.65, p.py + 0.65, 1.8);
+      links += `<line x1="${s0[0]}" y1="${s0[1]}" x2="${t[0]}" y2="${t[1]}" stroke="#6fb3ff" stroke-dasharray="4 4" marker-end="url(#arrowb)"/>`;
+    }
+  }
+  out += links;
+
+  /* tags */
+  let tags = '';
+  tags += tag(-6.5, 0, 2.6, 'Control plane · AWS', '#c9ced3', 34);
+  tags += tag(6.3, -4.8, 1.4, 'Gateway', '#c9ced3', 24);
+  tags += tag(15, -4.6, 0, 'Service shop-web', '#6fb3ff', 22);
+  for (const n of nodes) {
+    const used = onNode(n).filter(live).length;
+    tags += `<g opacity="${n.a.toFixed(2)}">` + tag(n.x + 3, 0, 0.5, `${n.id} · zona ${n.zone} · ${used}/${SLOTS}${n.cordoned ? ' · cordon' : ''}`, n.cordoned ? '#ff7a6b' : '#c9ced3', 46) + '</g>';
+  }
+  tags += tag(7, 10.8, 0, 'EBS · zona a', '#5b636a', 14);
+  tags += tag(23, 10.8, 0, 'EBS · zona b', '#5b636a', 14);
+  if (pend.length || sel === 'sched' || sel === 'drain') tags += tag(-6.5, 8, 0, `Pending · ${pend.length}`, pend.length ? '#ff7a6b' : '#5b636a', 18);
+  if (c.tags) {
+    const first = (pred) => pods.find(p => pred(p) && p.node && live(p));
+    const groups = [];
+    if (c.tags === 'deploy') groups.push(['web', `Deployment shop-web · ${pods.filter(p => p.wl === 'web' && p.phase === 'Running').length}/${spec.web.replicas}`], ['dns', `Deployment coredns · ${spec.dns.replicas}`]);
+    if (c.tags === 'sts') groups.push(['redis', 'StatefulSet redis · 2']);
+    if (c.tags === 'ds') groups.push(['logs', `DaemonSet log-agent · ${nodes.length}`]);
+    if (c.tags === 'ns') groups.push(['web', 'ns shop'], ['redis', 'ns shop'], ['logs', 'ns observability'], ['dns', 'ns kube-system']);
+    for (const [wl, text] of groups) { const p = first(q => q.wl === wl); if (p) tags += tag(p.px + 0.65, p.py + 0.65, (p.node ? 0.5 : 0) + 1.3, text, WL[wl].color, 30); }
+    if (c.tags === 'rs') {
+      const hashes = [...new Set(pods.filter(p => p.wl === 'web' && live(p)).map(p => p.hash))];
+      hashes.forEach((h, i) => { const p = first(q => q.wl === 'web' && q.hash === h); if (p) tags += tag(p.px + 0.65, p.py + 0.65, 1.8, `ReplicaSet shop-web-${h}`, h === spec.web.hash ? '#6fb3ff' : '#98a1a9', 30 + i * 22); });
+    }
+    if (c.tags === 'sts') for (const k of Object.keys(pvcs)) tags += tag(pvcs[k].x + 0.7, pvcs[k].y + 0.7, 0.45, `pvc data-${k}`, '#f0a35e', 22);
+  }
+  if (sel === 'pvc') for (const k of Object.keys(pvcs)) tags += tag(pvcs[k].x + 0.7, pvcs[k].y + 0.7, 0.45, `pvc data-${k} · zona ${pvcs[k].zone}`, '#f0a35e', 22);
+  out += tags;
+
+  $('scene').innerHTML = `<defs><pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="#ff7a6b" stroke-width="1.2" opacity=".45"/></pattern><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#e8ebee"/></marker><marker id="arrowb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#6fb3ff"/></marker></defs>` + out;
+}
+
+function renderHud() {
+  const running = pods.filter(p => p.phase === 'Running' && p.phase !== 'Terminating').length;
+  const pend = pods.filter(p => p.phase === 'Pending').length;
+  $('hud').innerHTML = `<span class="pill">${nodes.length} nodos</span><span class="pill">${running} pods Running</span><span class="pill${pend ? ' warn' : ''}">${pend} Pending</span>${rolling ? '<span class="pill">rolling update…</span>' : ''}`;
+}
+function renderLog() {
+  $('log').innerHTML = events.map(e => `<li class="${e.type === 'Warning' ? 'w' : ''}"><span>${e.t}</span><span class="r">${esc(e.reason)}</span><span class="m">${esc(e.msg)}</span></li>`).join('');
+}
+
+/* ---------- tooltip ---------- */
+const stage = $('stage'), tip = $('tip');
+$('scene').addEventListener('mousemove', e => {
+  const g = e.target.closest('[data-id]');
+  if (!g) { tip.hidden = true; return; }
+  const [kind, id] = g.dataset.id.split(':');
+  let html = '';
+  if (kind === 'pod') {
+    const p = pods.find(x => x.id === Number(id)); if (!p) { tip.hidden = true; return; }
+    html = `<b>pod/${esc(p.name)}</b><br><span>${WL[p.wl].kind} ${WL[p.wl].name} · ns ${WL[p.wl].ns}</span><br><span>nodo:</span> ${p.node || '—'} · <span>estado:</span> ${p.phase}`;
+  } else if (kind === 'node') {
+    const n = nodes.find(x => x.id === id);
+    html = `<b>node/${n.id}</b><br><span>${n.pool === 'system' ? 'node group system · on-demand' : 'NodePool default · spot'} · zona ${n.zone}</span><br><span>requests:</span> ${onNode(n).filter(live).length}/${SLOTS}${n.cordoned ? ' · <span style="color:#ff7a6b">SchedulingDisabled</span>' : ''}`;
+  } else if (kind === 'disk') {
+    html = `<b>pvc/data-${esc(id)}</b><br><span>volumen EBS · zona ${pvcs[id].zone}</span>`;
+  } else if (kind === 'cp') {
+    html = { api: '<b>API server</b><br><span>la única puerta del clúster</span>', etcd: '<b>etcd</b><br><span>guarda el estado de cada objeto</span>', scheduler: '<b>scheduler</b><br><span>elige nodo para los pods nuevos</span>', controllers: '<b>controladores</b><br><span>comparan lo deseado con lo real</span>' }[id];
+  } else if (kind === 'gw') html = '<b>Gateway</b><br><span>entrada del tráfico (Envoy)</span>';
+  tip.innerHTML = html; tip.hidden = false;
+  const r = stage.getBoundingClientRect();
+  let x = e.clientX - r.left + 14, y = e.clientY - r.top + 14;
+  if (x + tip.offsetWidth > r.width - 8) x = e.clientX - r.left - tip.offsetWidth - 14;
+  tip.style.left = x + 'px'; tip.style.top = y + 'px';
+});
+$('scene').addEventListener('mouseleave', () => { tip.hidden = true; });
+$('scene').addEventListener('click', e => {
+  const g = e.target.closest('[data-id]'); if (!g) return;
+  const [kind, id] = g.dataset.id.split(':');
+  if (kind === 'pod') { const p = pods.find(x => x.id === Number(id)); if (p) pick({ web: 'deploy', dns: 'deploy', redis: 'sts', logs: 'ds' }[p.wl]); }
+  if (kind === 'node') { $('nodeSel').value = id; syncButtons(); pick('node'); }
+  if (kind === 'disk') pick('pvc');
+  if (kind === 'cp') pick('cp');
+  if (kind === 'gw') pick('svc');
+});
+
+/* ---------- animation ---------- */
+let last = performance.now();
+function tick(now = performance.now()) {
+  let moving = false;
+  const dt = Math.min(60, Math.max(0, (now - last) / 16.7)); last = now;
+  const k = reduce ? 1 : 1 - Math.pow(0.86, dt);
+  for (const p of pods) {
+    const [tx, ty] = target(p);
+    const dx = tx - p.px, dy = ty - p.py;
+    if (Math.abs(dx) + Math.abs(dy) > 0.01) { p.px += dx * k; p.py += dy * k; moving = true; } else { p.px = tx; p.py = ty; }
+    if (p.phase === 'Terminating') { p.a -= reduce ? 1 : 0.03 * dt; p.z -= reduce ? 0 : 0.01 * dt; moving = true; }
+    else {
+      if (p.a < 1) { p.a = Math.min(1, p.a + (reduce ? 1 : 0.06 * dt)); moving = true; }
+      if (p.z > 0) { p.z = Math.max(0, p.z - (reduce ? 9 : 0.12 * dt)); moving = true; }
+    }
+  }
+  for (const n of nodes) if (n.a < 1) { n.a = Math.min(1, n.a + (reduce ? 1 : 0.05 * dt)); moving = true; }
+  const gone = pods.filter(p => p.phase === 'Terminating' && p.a <= 0);
+  if (gone.length) { pods = pods.filter(p => !gone.includes(p)); reconcile(); renderHud(); moving = true; }
+  if (moving || dirty) { render(); dirty = false; }
+  requestAnimationFrame(tick);
+}
+
+init(); fillNodeSel(); syncButtons(); pick('cluster'); renderLog(); renderHud();
+requestAnimationFrame(tick);
+})();
+</script>

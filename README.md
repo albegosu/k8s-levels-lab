@@ -22,6 +22,8 @@ Level 5 reproduces a real incident: a DaemonSet rollout gets stuck because the n
 
 ## Two maps
 
+**See it in 3D:** an [interactive isometric cluster](https://albegosu.github.io/k8s-levels-lab/) where you can scale, delete pods, roll out a new version, drain a node and add a Karpenter node, and watch each controller react. It is a single HTML file in [`docs/`](docs/index.html), so you can also open it locally.
+
 How a cluster works: everything goes through the API. The control plane decides and the nodes do the work.
 
 ```mermaid
