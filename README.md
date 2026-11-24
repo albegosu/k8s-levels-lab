@@ -22,7 +22,7 @@ Level 5 reproduces a real incident: a DaemonSet rollout gets stuck because the n
 
 ## Two maps
 
-**See it in 3D:** an [interactive isometric cluster](https://albegosu.github.io/k8s-levels-lab/) where you can scale, delete pods, roll out a new version, drain a node and add a Karpenter node, and watch each controller react. It is a single HTML file in [`docs/`](docs/index.html), so you can also open it locally.
+**See it in 3D:** an [interactive isometric cluster](https://albegosu.github.io/k8s-levels-lab/) where you can scale, delete pods, roll out a new version, drain a node and add a Karpenter node, and watch each controller react. It is a single HTML file in [`docs/`](docs/index.html), so you can also open it locally. Its companion, the [path of a request](https://albegosu.github.io/k8s-levels-lab/request.html), follows `curl` through DNS, the load balancer, Envoy, the HTTPRoute and the Service to the pod, with nine faults to switch on and a blind-diagnosis mode.
 
 How a cluster works: everything goes through the API. The control plane decides and the nodes do the work.
 
@@ -105,6 +105,7 @@ Every level ends with a check that inspects the cluster and tells you what is do
 ./lab.sh check 3      # one level
 ./lab.sh check all    # every level
 ./lab.sh progress     # which levels you have passed
+./lab.sh progress --open   # the same as a page: a staircase of levels, done ones in green
 ```
 
 A level counts as passed when all its tasks pass; the date is kept in `.progress`, outside Git. Set `LAB_LANG=es` for messages in Spanish.

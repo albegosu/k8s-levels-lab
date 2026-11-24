@@ -4,6 +4,8 @@
 
 Necesita `level-2/web.yaml` aplicado. El addon `gateway` lo instala `./lab.sh up`.
 
+**Míralo antes:** el [recorrido de una petición](https://albegosu.github.io/k8s-levels-lab/request.es.html) enseña cada salto y cómo se ve cada avería desde `curl`.
+
 ## Conceptos
 
 - **Service.** Una IP y un nombre DNS fijos delante de un grupo de pods, que encuentra por labels. Solo envía tráfico a pods **listos**; si no hay ninguno, sus endpoints quedan vacíos y las peticiones fallan.

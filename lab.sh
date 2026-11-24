@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Kubernetes lab, level by level.
-# Usage: ./lab.sh up | addon <name> | check <level|all> | progress | status | down
+# Usage: ./lab.sh up | addon <name> | check <level|all> | progress [--open] | status | down
 set -euo pipefail
 cd "$(dirname "$0")"
 CTX=kind-lab
@@ -75,8 +75,25 @@ case "${1:-}" in
       if [[ -n $d ]]; then printf '  %s✔%s level %s  %s\n' "$G" "$N" "$i" "$d"; done_n=$((done_n + 1)); else printf '  · level %s\n' "$i"; fi
     done
     bar=$(printf '%*s' "$done_n" '' | tr ' ' '#')$(printf '%*s' $((9 - done_n)) '' | tr ' ' '.')
-    printf '\n  [%s] %s/9\n' "$bar" "$done_n" ;;
+    printf '\n  [%s] %s/9\n' "$bar" "$done_n"
+    if [[ ${2:-} == --open ]]; then
+      lang=${LAB_LANG:-$([[ "${LANG:-}" == es* ]] && echo es || echo en)}
+      python3 - "$lang" <<'PY'
+import json, sys
+done = {}
+try:
+    for line in open('.progress'):
+        level, day = line.split()
+        done[level] = day
+except FileNotFoundError:
+    pass
+page = open('checks/progress.html').read()
+page = page.replace('/*PROGRESS*/{}', json.dumps(done)).replace("/*LANG*/'en'", json.dumps(sys.argv[1]))
+open('.progress.html', 'w').write(page)
+PY
+      if command -v open >/dev/null; then open .progress.html; elif command -v xdg-open >/dev/null; then xdg-open .progress.html; else echo "Open .progress.html in a browser"; fi
+    fi ;;
   status) k get nodes -L role,karpenter.sh/nodepool; echo; h list -A ;;
   down) kind delete cluster --name lab ;;
-  *) echo "Usage: ./lab.sh up | addon <name> | check <level|all> | progress | status | down"; exit 1 ;;
+  *) echo "Usage: ./lab.sh up | addon <name> | check <level|all> | progress [--open] | status | down"; exit 1 ;;
 esac

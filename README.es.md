@@ -24,7 +24,7 @@ Cada nivel tiene su `README.es.md`.
 
 ## Dos mapas
 
-**Verlo en 3D:** un [clúster isométrico interactivo](https://albegosu.github.io/k8s-levels-lab/es.html) donde puedes escalar, borrar pods, desplegar una versión nueva, hacer drain de un nodo y añadir uno de Karpenter, y ver cómo reacciona cada controlador. Es un único HTML en [`docs/`](docs/es.html), así que también puedes abrirlo en local.
+**Verlo en 3D:** un [clúster isométrico interactivo](https://albegosu.github.io/k8s-levels-lab/es.html) donde puedes escalar, borrar pods, desplegar una versión nueva, hacer drain de un nodo y añadir uno de Karpenter, y ver cómo reacciona cada controlador. Es un único HTML en [`docs/`](docs/es.html), así que también puedes abrirlo en local. Lo acompaña el [recorrido de una petición](https://albegosu.github.io/k8s-levels-lab/request.es.html): sigue a `curl` por el DNS, el balanceador, Envoy, la HTTPRoute y el Service hasta el pod, con nueve averías que puedes activar y un modo de diagnóstico a ciegas.
 
 Cómo funciona un clúster: todo pasa por la API. El control plane decide y los nodos ejecutan.
 
@@ -107,6 +107,7 @@ Cada nivel acaba con un check que mira el clúster y te dice qué está hecho y 
 LAB_LANG=es ./lab.sh check 3      # un nivel
 LAB_LANG=es ./lab.sh check all    # todos
 ./lab.sh progress                 # qué niveles has superado
+./lab.sh progress --open          # lo mismo como página: una escalera de niveles, los hechos en verde
 ```
 
 Un nivel cuenta como superado cuando pasan todas sus tareas; la fecha se guarda en `.progress`, fuera de Git. Si tu sistema está en español, `LAB_LANG=es` ya viene por defecto.

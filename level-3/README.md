@@ -4,6 +4,8 @@
 
 Needs `level-2/web.yaml` applied. The `gateway` add-on is installed by `./lab.sh up`.
 
+**See it first:** the [path of a request](https://albegosu.github.io/k8s-levels-lab/request.html) shows every hop and what each fault looks like from `curl`.
+
 ## Concepts
 
 - **Service.** A stable IP and DNS name in front of a group of pods, found by labels. It only sends traffic to **ready** pods; with none, its endpoints are empty and requests fail.

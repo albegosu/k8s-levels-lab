@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{padding-block:env(safe-area-inset-top,0px) env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}a{color:#6fb3ff}</style>
+<title>Path of a request</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: the request path as an isometric line of hops on the left, fault controls and diagnosis on the right; one column under 980px. Same dark console look as the isometric cluster. */
+:root{
+  --bg:#121416; --panel:#191c1f; --line:#2a2f34; --fg:#e8ebee; --muted:#98a1a9; --tag:#0e1012;
+  --ok:#5fd39a; --bad:#ff7a6b; --pkt:#6fb3ff; --warn:#f0c35e;
+  --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:14px;line-height:1.5}
+.wrap{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:16px;box-sizing:border-box;min-height:100%;
+  padding-block:16px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+@media (max-width:980px){.wrap{grid-template-columns:minmax(0,1fr)}}
+.left,.panel{display:flex;flex-direction:column;gap:12px;min-width:0}
+header h1{font-family:var(--mono);font-size:15px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin:0}
+header p{margin:4px 0 0;color:var(--muted);max-width:72ch}
+.stage{position:relative;border:1px solid var(--line);border-radius:10px;overflow:hidden;min-width:0}
+.stage svg{display:block;width:100%;height:auto;user-select:none}
+.term{font-family:var(--mono);font-size:12px;background:#0b0c0e;border:1px solid var(--line);border-radius:10px;padding:12px 14px;min-height:96px;white-space:pre-wrap;overflow-wrap:anywhere;color:#cfd5da}
+.term .p{color:var(--muted)} .term .ok{color:var(--ok)} .term .bad{color:var(--bad)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;min-width:0}
+.card h2{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+.seg{display:flex;gap:0;border:1px solid var(--line);border-radius:6px;overflow:hidden;width:max-content;max-width:100%}
+.seg button{font:inherit;font-size:13px;background:transparent;color:var(--muted);border:0;padding:6px 12px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:#262b30;color:var(--fg)}
+.faults{display:flex;flex-direction:column;gap:4px;margin-top:10px}
+.faults label{display:grid;grid-template-columns:18px minmax(0,1fr);gap:8px;align-items:start;padding:5px 6px;border-radius:6px;cursor:pointer}
+.faults label:hover{background:#1f2327}
+.faults small{display:block;color:var(--muted);font-size:12px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px}
+button.act{font-family:var(--sans);font-size:13px;background:#22262a;color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:7px 12px;cursor:pointer}
+button.act.primary{background:var(--pkt);border-color:var(--pkt);color:#0b1520;font-weight:600}
+button.act:disabled{opacity:.45;cursor:default}
+.score{font-family:var(--mono);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.detail .kicker{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.detail h3{margin:2px 0 8px;font-size:17px;font-weight:600;text-wrap:balance}
+.detail p{margin:0 0 10px}
+.detail .verdict{font-weight:600}
+.detail .verdict.ok{color:var(--ok)} .detail .verdict.bad{color:var(--bad)}
+.cmd{font-family:var(--mono);font-size:12px;background:var(--tag);border:1px solid var(--line);border-radius:6px;padding:8px 10px;overflow-x:auto;white-space:pre;margin:0 0 10px}
+.real{font-size:13px;color:var(--muted);border-left:2px solid var(--line);padding-left:10px}
+:focus-visible{outline:2px solid var(--pkt);outline-offset:2px}
+</style>
+
+<div class="wrap">
+  <div class="left">
+    <header>
+      <h1>Path of a request</h1>
+      <p>What happens between <code>curl https://shop.example.com/api</code> and the container that answers, on an EKS cluster with Envoy Gateway. Turn on a fault, send the request and see where it stops and what symptom you get. <a href="request.es.html" hreflang="es">Español</a> · <a href="index.html">Isometric cluster</a> · <a href="https://github.com/albegosu/k8s-levels-lab">Repository</a></p>
+    </header>
+    <div class="stage"><svg id="scene" role="img" aria-label="Path of a request from the client to the pod"></svg></div>
+    <div class="term" id="term" aria-live="polite"></div>
+  </div>
+  <aside class="panel">
+    <section class="card">
+      <h2>Mode</h2>
+      <div class="seg" role="group" aria-label="Mode">
+        <button id="mExplore" aria-pressed="true">Explore</button>
+        <button id="mGuess" aria-pressed="false">Guess where it breaks</button>
+      </div>
+      <div id="faultBox" class="faults"></div>
+      <div class="row">
+        <button class="act primary" id="send">Send request</button>
+        <span class="score" id="score"></span>
+      </div>
+    </section>
+    <section class="card detail" id="detail" aria-live="polite"></section>
+  </aside>
+</div>
+
+<script>
+(() => {
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const S = 22, C = Math.cos(Math.PI / 6);
+const P = (x, y, z = 0) => [(x - y) * C * S, (x + y) * 0.5 * S - z * S];
+const pts = a => a.map(p => P(p[0], p[1], p[2]).map(n => n.toFixed(1)).join(',')).join(' ');
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const $ = id => document.getElementById(id);
+
+const HOPS = [
+  { id: 'client', name: 'Client', kind: 'curl', h: 1.0,
+    what: 'Your laptop sends the HTTPS request. First it needs the IP for the name and, if the endpoint is internal, to be inside the network (VPN).',
+    yaml: 'curl -sv https://shop.example.com/api' },
+  { id: 'dns', name: 'DNS', kind: 'Route 53 + ExternalDNS', h: 1.6,
+    what: 'ExternalDNS reads the Gateways and HTTPRoutes in the cluster and creates the record in Route 53. If the record does not exist, the request never leaves the laptop.',
+    yaml: 'dig +short shop.example.com\n# ExternalDNS only publishes what passes its label filter' },
+  { id: 'nlb', name: 'NLB', kind: 'AWS Load Balancer', h: 2.0,
+    what: 'The AWS load balancer the Gateway creates. It can be internal (VPN only) or public, and on some clusters it terminates TLS with an ACM certificate.',
+    yaml: 'kubectl get svc -n envoy-gateway-system\n# EXTERNAL-IP = the NLB name' },
+  { id: 'gateway', name: 'Gateway', kind: 'Envoy Gateway · listener', h: 2.4,
+    what: 'The Gateway declares the listeners (port, protocol, hostnames). Envoy takes the connection and looks for a matching route.',
+    yaml: 'kind: Gateway\nspec:\n  gatewayClassName: envoy\n  listeners:\n  - name: https\n    port: 443\n    hostname: "*.example.com"\n    allowedRoutes:\n      namespaces: { from: All }' },
+  { id: 'route', name: 'HTTPRoute', kind: 'host + path → backend', h: 2.0,
+    what: 'The HTTPRoute attaches to the Gateway (parentRefs) and says which host and path go to which Service. If it is not Accepted, Envoy does not know it.',
+    yaml: 'kind: HTTPRoute\nspec:\n  parentRefs: [{ name: external, namespace: envoy-gateway-system }]\n  hostnames: ["shop.example.com"]\n  rules:\n  - matches: [{ path: { type: PathPrefix, value: /api } }]\n    backendRefs: [{ name: shop-web, port: 80 }]' },
+  { id: 'service', name: 'Service', kind: 'selector + ports', h: 1.6,
+    what: 'A stable address. It picks pods by label and maps its port to the container targetPort.',
+    yaml: 'kind: Service\nspec:\n  selector: { app: shop-web }\n  ports: [{ port: 80, targetPort: 8080 }]' },
+  { id: 'eps', name: 'EndpointSlice', kind: 'IPs of ready pods', h: 1.2,
+    what: 'The real list of destinations: the IPs of pods that match the selector and are Ready. If it is empty, there is nobody to send to.',
+    yaml: 'kubectl get endpointslices -n shop \\\n  -l kubernetes.io/service-name=shop-web' },
+  { id: 'pod', name: 'Pod', kind: 'container :8080', h: 1.8,
+    what: 'The container that answers. It only gets traffic while its readinessProbe passes.',
+    yaml: 'readinessProbe:\n  httpGet: { path: /healthz, port: 8080 }' }
+];
+const X = i => i * 2.7, Y = i => -i * 2.7;
+
+const FAULTS = [
+  { id: 'none', label: 'None', hint: 'Everything set up right', at: null, back: 7,
+    out: ['< HTTP/2 200', '< content-type: application/json', '{"status":"ok"}'], code: 'ok',
+    title: 'The request gets there and back', why: 'Every hop finds what it needs: a DNS record, a reachable NLB, a listener for the hostname, an accepted route, a Service with endpoints and a Ready pod.',
+    check: 'kubectl get gateway,httproute -A\nkubectl get endpointslices -n shop', fix: 'Nothing to fix.', real: 'In production every hop also leaves metrics: the NLB in CloudWatch, Envoy in Prometheus and the pod in its logs.' },
+  { id: 'dns', label: 'The DNS record does not exist', hint: 'ExternalDNS did not publish it', at: 1, back: null,
+    out: ['* Could not resolve host: shop.example.com', 'curl: (6) Could not resolve host: shop.example.com'], code: 'bad',
+    title: 'It stops at DNS', why: 'ExternalDNS did not create the record: the resource does not pass its label filter, or the zone is not one it watches. The request never leaves the laptop.',
+    check: 'dig +short shop.example.com\nkubectl logs -n external-dns deploy/external-dns | grep shop', fix: 'Add the label or annotation ExternalDNS expects on the Gateway or HTTPRoute and wait for it to sync.', real: 'If the endpoint is internal, the record may exist but return a private 10.x IP you can only reach over VPN.' },
+  { id: 'vpn', label: 'No VPN to an internal endpoint', hint: 'Internal NLB, laptop outside', at: 2, back: null,
+    out: ['*   Trying 10.0.5.172:443...', '* connect to 10.0.5.172 port 443 failed: Operation timed out', 'curl: (28) Failed to connect: Timeout'], code: 'bad',
+    title: 'It stops at the NLB: timeout', why: 'DNS returns a private IP because the NLB is internal. Without VPN there is no route to that network and the connection waits until it times out.',
+    check: 'dig +short shop.example.com   # 10.x?\ntailscale status', fix: 'Connect to the VPN for the right environment. Each account may have its own subnet router.', real: 'A timeout is rarely Kubernetes: it is the network (VPN, security group, route, non-transitive peering).' },
+  { id: 'tls', label: 'The certificate does not cover the host', hint: 'ACM without that name', at: 2, back: 2,
+    out: ['* SSL: no alternative certificate subject name matches target host name', "curl: (60) SSL: no alternative certificate subject name matches 'shop.example.com'"], code: 'bad',
+    title: 'It stops at the NLB TLS', why: 'The NLB terminates TLS with an ACM certificate that does not include shop.example.com (nor a wildcard covering it).',
+    check: 'curl -vI https://shop.example.com 2>&1 | grep -i subject\naws acm describe-certificate --certificate-arn <arn>', fix: 'Add the name to the ACM certificate (in Terraform) or use a wildcard one.', real: 'If Envoy terminates TLS instead of the NLB, the certificate comes from a Gateway Secret and the error is the same.' },
+  { id: 'route', label: 'The HTTPRoute is not accepted', hint: 'Wrong parentRef', at: 4, back: 3,
+    out: ['< HTTP/2 404', '< server: envoy', '< content-length: 0'], code: 'bad',
+    title: 'Envoy answers 404', why: 'The HTTPRoute points to a Gateway that does not exist or does not allow routes from that namespace. Envoy does not know it and has nowhere to send the host.',
+    check: 'kubectl get httproute shop-web -n shop -o yaml | yq .status\n# look for Accepted=False and its reason', fix: 'Fix parentRefs (Gateway name and namespace) or allowedRoutes on the listener.', real: 'A 404 with server: envoy and no body almost always means "no route", not a 404 from your app.' },
+  { id: 'path', label: 'The path does not match', hint: 'PathPrefix /v1 instead of /api', at: 4, back: 3,
+    out: ['< HTTP/2 404', '< server: envoy'], code: 'bad',
+    title: 'Envoy answers 404 for the path', why: 'The HTTPRoute is accepted, but its matches ask for /v1 and the request goes to /api. Envoy has no rule that matches.',
+    check: 'kubectl get httproute shop-web -n shop -o yaml | yq .spec.rules', fix: 'Adjust matches.path or the hostname to match what you request.', real: 'Always compare the exact host and path the client uses with the ones in the HTTPRoute.' },
+  { id: 'selector', label: 'The Service selects no pods', hint: 'selector app: shop-api', at: 5, back: 3,
+    out: ['< HTTP/2 503', '< server: envoy', 'no healthy upstream'], code: 'bad',
+    title: 'Envoy answers 503: no healthy upstream', why: 'The Service selector does not match the pod labels, so the EndpointSlice is empty. Envoy has a route but no destination.',
+    check: 'kubectl get endpointslices -n shop -l kubernetes.io/service-name=shop-web\nkubectl get pods -n shop --show-labels', fix: 'Make the Service selector match the pod labels.', real: 'Empty endpoints are the most common cause of a 503 after a chart change.' },
+  { id: 'ready', label: 'No pod is Ready', hint: 'The readinessProbe fails', at: 6, back: 3,
+    out: ['< HTTP/2 503', '< server: envoy', 'no healthy upstream'], code: 'bad',
+    title: 'Envoy answers 503: the pods are not ready', why: 'The pods exist and match, but their readinessProbe fails. Kubernetes removes them from the EndpointSlice and no destination is left.',
+    check: 'kubectl get pods -n shop\nkubectl describe pod -n shop -l app=shop-web | grep -A3 Readiness', fix: 'Fix what makes the probe fail (a dependency down, wrong health path, slow start) or tune initialDelaySeconds.', real: 'Same symptom as a broken selector: look at the EndpointSlice to tell them apart.' },
+  { id: 'netpol', label: 'A NetworkPolicy blocks Envoy', hint: 'Only its own namespace is allowed', at: 7, back: 3,
+    out: ['< HTTP/2 503', '< server: envoy', 'upstream connect error or disconnect/reset before headers. reset reason: connection timeout'], code: 'bad',
+    title: 'Envoy answers 503 after a wait', why: 'There are endpoints, but the NetworkPolicy in the shop namespace only lets in traffic from that namespace. Envoy packets are dropped and the connection times out.',
+    check: 'kubectl get networkpolicy -n shop -o yaml', fix: 'Allow ingress from the Envoy Gateway namespace (a namespaceSelector with its label).', real: 'With the VPC CNI on EKS, NetworkPolicies are only enforced when the network policy agent is enabled.' },
+  { id: 'port', label: 'Wrong targetPort', hint: 'Service to :8000, app on :8080', at: 7, back: 3,
+    out: ['< HTTP/2 503', '< server: envoy', 'upstream connect error or disconnect/reset before headers. reset reason: connection failure'], code: 'bad',
+    title: 'Envoy answers 503 at once', why: 'The Service sends to port 8000 and the container listens on 8080. The pod refuses the connection straight away.',
+    check: 'kubectl get svc shop-web -n shop -o yaml | yq .spec.ports\nkubectl get pod -n shop -l app=shop-web -o yaml | yq ".items[0].spec.containers[0].ports"', fix: 'Set targetPort to the real container port, ideally by name (targetPort: http).', real: 'connection failure (instant refusal) points to the port; connection timeout points to the network or a NetworkPolicy.' }
+];
+
+let mode = 'explore', fault = FAULTS[0], secret = null, guessed = false, score = { ok: 0, n: 0 };
+let anim = null, selHop = null, broken = null;
+
+/* ---------- scene ---------- */
+function box(x, y, z, w, d, h, c) {
+  const t = [[x, y, z + h], [x + w, y, z + h], [x + w, y + d, z + h], [x, y + d, z + h]];
+  const l = [[x, y + d, z], [x + w, y + d, z], [x + w, y + d, z + h], [x, y + d, z + h]];
+  const r = [[x + w, y, z], [x + w, y + d, z], [x + w, y + d, z + h], [x + w, y, z + h]];
+  const s = `stroke="${c.stroke}" stroke-width="1" stroke-linejoin="round"`;
+  return `<polygon points="${pts(l)}" fill="${c.left}" ${s}/><polygon points="${pts(r)}" fill="${c.right}" ${s}/><polygon points="${pts(t)}" fill="${c.top}" ${s}/>`;
+}
+const plate = (x, y, w, d, fill, stroke, dash = '') => `<polygon points="${pts([[x, y, 0], [x + w, y, 0], [x + w, y + d, 0], [x, y + d, 0]])}" fill="${fill}" stroke="${stroke}" stroke-width="1"${dash ? ` stroke-dasharray="${dash}"` : ''}/>`;
+function tag(x, y, z, text, color = '#c9ced3', lift = 30, sub = '') {
+  const [sx, sy] = P(x, y, z);
+  const w = Math.max(text.length * 6.7, sub.length * 5.9) + 16, h = sub ? 32 : 18;
+  return `<g pointer-events="none"><line x1="${sx}" y1="${sy}" x2="${sx}" y2="${sy - lift + h / 2}" stroke="${color}"/><rect x="${(sx - w / 2).toFixed(1)}" y="${(sy - lift - h / 2).toFixed(1)}" width="${w.toFixed(1)}" height="${h}" rx="3" fill="#0e1012" stroke="${color}"/><text x="${sx.toFixed(1)}" y="${(sy - lift - h / 2 + 13).toFixed(1)}" text-anchor="middle" font-family="JetBrains Mono,ui-monospace,Menlo,monospace" font-size="11" fill="#e8ebee" letter-spacing=".4">${esc(text.toUpperCase())}</text>${sub ? `<text x="${sx.toFixed(1)}" y="${(sy - lift - h / 2 + 27).toFixed(1)}" text-anchor="middle" font-family="JetBrains Mono,ui-monospace,Menlo,monospace" font-size="9.5" fill="#98a1a9">${esc(sub)}</text>` : ''}</g>`;
+}
+const corners = [];
+for (const [x, y] of [[-1.2, 3.4], [X(7) + 3.4, Y(7) - 1.2], [-1.2, -1.2], [X(7) + 3.4, Y(7) + 3.4]]) for (const z of [0, 4]) corners.push(P(x, y, z));
+const minX = Math.min(...corners.map(c => c[0])) - 20, maxX = Math.max(...corners.map(c => c[0])) + 20;
+const minY = Math.min(...corners.map(c => c[1])) - 70, maxY = Math.max(...corners.map(c => c[1])) + 10;
+$('scene').setAttribute('viewBox', `${minX.toFixed(0)} ${minY.toFixed(0)} ${(maxX - minX).toFixed(0)} ${(maxY - minY).toFixed(0)}`);
+let grid = '';
+for (let x = -1; x <= 23; x++) { const a = P(x, -21), b = P(x, 3); grid += `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}"/>`; }
+for (let y = -21; y <= 3; y++) { const a = P(-1, y), b = P(23, y); grid += `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}"/>`; }
+grid = `<g stroke="#1d2125">${grid}</g>`;
+
+const NEUTRAL = { top: '#3a3f45', left: '#24282c', right: '#2d3237', stroke: '#9aa3ab' };
+const RED = { top: '#5a2c28', left: '#331a18', right: '#41211e', stroke: '#ff7a6b' };
+const BLUE = { top: '#2c4a66', left: '#1a2b3b', right: '#223749', stroke: '#6fb3ff' };
+const GREEN = { top: '#2a5240', left: '#183026', right: '#1f3d30', stroke: '#5fd39a' };
+
+function hopTop(i) { return [X(i) + 1.1, Y(i) + 1.1, HOPS[i].h]; }
+const band = (a, b, fill, stroke, dash = '') => { const m = 0.5, u0 = X(a) - Y(a) - 2.2 - m, u1 = X(b) - Y(b) + 2.2 + m, v0 = -m, v1 = 4.4 + m; const w = (u, v) => [(u + v) / 2, (v - u) / 2, 0]; return `<polygon points="${pts([w(u0, v0), w(u1, v0), w(u1, v1), w(u0, v1)])}" fill="${fill}" stroke="${stroke}" stroke-width="1"${dash ? ` stroke-dasharray="${dash}"` : ''}/>`; };
+function render() {
+  let s = grid;
+  s += band(0, 1, 'rgba(255,255,255,0.02)', '#30363c', '4 4');
+  s += band(2, 2, 'rgba(240,195,94,0.04)', '#5b5236');
+  s += band(3, 7, 'rgba(111,179,255,0.035)', '#2e3d4d');
+  s += band(5, 7, 'rgba(111,179,255,0.05)', '#3c5268', '3 3');
+  /* wire */
+  for (let i = 0; i < HOPS.length - 1; i++) {
+    const a = P(X(i) + 1.1, Y(i) + 1.1, 0.02), b = P(X(i + 1) + 1.1, Y(i + 1) + 1.1, 0.02);
+    s += `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="#3d444b" stroke-width="2"/>`;
+  }
+  HOPS.forEach((h, i) => {
+    let c = NEUTRAL;
+    if (broken === i) c = RED;
+    else if (anim && anim.reached >= i && anim.dir === 1 && broken === null) c = BLUE;
+    if (anim && anim.done && anim.ok && i <= anim.maxReach) c = GREEN;
+    if (selHop === i && c === NEUTRAL) c = { ...NEUTRAL, stroke: '#e8ebee' };
+    s += `<g data-hop="${i}" style="cursor:pointer">${box(X(i), Y(i), 0, 2.2, 2.2, h.h, c)}</g>`;
+  });
+  if (mode === 'explore' && fault.id === 'netpol') {
+    s += `<polygon points="${pts([[X(4.5) - 0.5, Y(4.5) - 0.5, 0], [X(4.5) + 2.7, Y(4.5) + 2.7, 0], [X(4.5) + 2.7, Y(4.5) + 2.7, 2.6], [X(4.5) - 0.5, Y(4.5) - 0.5, 2.6]])}" fill="rgba(255,122,107,0.14)" stroke="#ff7a6b" stroke-dasharray="4 3"/>`;
+  }
+  /* packet */
+  if (anim && anim.pos) {
+    const [x, y, z] = anim.pos;
+    const col = anim.dir === -1 ? (anim.ok ? GREEN : RED) : BLUE;
+    s += box(x - 0.35, y - 0.35, z, 0.7, 0.7, 0.7, col);
+  }
+  if (broken !== null) {
+    const [x, y, z] = hopTop(broken); const [sx, sy] = P(x, y, z + 0.2);
+    s += `<g stroke="#ff7a6b" stroke-width="3" stroke-linecap="round"><line x1="${sx - 9}" y1="${sy - 9}" x2="${sx + 9}" y2="${sy + 9}"/><line x1="${sx + 9}" y1="${sy - 9}" x2="${sx - 9}" y2="${sy + 9}"/></g>`;
+  }
+  HOPS.forEach((h, i) => { s += tag(X(i) + 1.1, Y(i) + 1.1, 2.6, h.name, broken === i ? '#ff7a6b' : '#c9ced3', i % 2 ? 78 : 34, h.kind); });
+  const ftag = (a, b, t, c) => { const m = (a + b) / 2; const [sx, sy] = P(X(m) + 1.1, Y(m) + 4.4, 0); return `<text x="${sx.toFixed(1)}" y="${(sy + 4).toFixed(1)}" text-anchor="middle" font-family="JetBrains Mono,ui-monospace,Menlo,monospace" font-size="10.5" fill="${c}" letter-spacing=".6">${esc(t.toUpperCase())}</text>`; };
+  s += ftag(0, 1, 'Internet', '#7d868e') + ftag(2, 2, 'AWS', '#a8996a') + ftag(3, 4, 'EKS cluster', '#6f8eaa') + ftag(5, 7, 'namespace shop', '#6f8eaa');
+  $('scene').innerHTML = s;
+}
+
+/* ---------- animation (time based, survives low frame rates) ---------- */
+function path(from, to) { const pts = []; const st = from < to ? 1 : -1; for (let i = from; st > 0 ? i <= to : i >= to; i += st) pts.push(i); return pts; }
+function run(f) {
+  broken = null;
+  const stop = f.at === null ? HOPS.length - 1 : f.at;
+  const fwd = path(0, stop);
+  const back = f.back === null ? [] : path(Math.min(f.back, stop), 0);
+  anim = { seq: [...fwd.map(i => ({ i, dir: 1 })), ...back.map(i => ({ i, dir: -1 }))], k: 0, t: 0, dir: 1, reached: 0, maxReach: stop, ok: f.code === 'ok', done: false, pos: null, f, fwdLen: fwd.length };
+  $('send').disabled = true;
+  last = performance.now();
+  term(f, 0);
+}
+let last = performance.now();
+function tick(now) {
+  const dt = Math.min(500, now - last); last = now;
+  if (anim && !anim.done) {
+    const speed = reduce ? 1e9 : 320; // ms per hop
+    anim.t += dt;
+    while (anim.t >= speed && !anim.done) {
+      anim.t -= speed; anim.k++;
+      if (anim.k >= anim.fwdLen - 1 && anim.f.at !== null) { broken = anim.f.at; }
+      if (anim.k >= anim.seq.length - 1) { anim.done = true; anim.k = anim.seq.length - 1; finish(); }
+    }
+    const a = anim.seq[anim.k], b = anim.seq[Math.min(anim.k + 1, anim.seq.length - 1)];
+    const u = anim.done ? 1 : Math.min(1, anim.t / speed);
+    const pa = hopTop(a.i), pb = hopTop(b.i);
+    const hz = Math.max(pa[2], pb[2]) + 0.6;
+    anim.pos = [pa[0] + (pb[0] - pa[0]) * u, pa[1] + (pb[1] - pa[1]) * u, pa[2] + 0.4 + (hz - pa[2] - 0.4) * Math.sin(Math.PI * u) + (pb[2] - pa[2]) * u];
+    anim.dir = b.dir; anim.reached = Math.max(anim.reached, a.dir === 1 ? a.i : 0);
+    render();
+  }
+  requestAnimationFrame(tick);
+}
+
+/* ---------- panel ---------- */
+function term(f, phase) {
+  const head = `<span class="p">$ curl -sv https://shop.example.com/api</span>\n`;
+  if (phase === 0) { $('term').innerHTML = head + '<span class="p">…</span>'; return; }
+  const cls = f.code === 'ok' ? 'ok' : 'bad';
+  $('term').innerHTML = head + f.out.map(l => `<span class="${cls}">${esc(l)}</span>`).join('\n');
+}
+function explain(f, prefix = '') {
+  const where = f.at === null ? 'It reaches the pod' : `Breaks at: ${HOPS[f.at].name}`;
+  $('detail').innerHTML = `${prefix}<div class="kicker">${esc(where)}</div><h3>${esc(f.title)}</h3><p>${esc(f.why)}</p><div class="kicker">How to check it</div><div class="cmd">${esc(f.check)}</div><p><b>Fix:</b> ${esc(f.fix)}</p><div class="real">${esc(f.real)}</div>`;
+}
+function finish() {
+  const f = anim.f;
+  term(f, 1);
+  $('send').disabled = false;
+  if (mode === 'explore') explain(f);
+  else {
+    guessed = false;
+    $('detail').innerHTML = `<div class="kicker">Your turn</div><h3>Where did it break?</h3><p>Read the curl output and click the hop where you think the problem is. If you think everything works, click the Pod.</p>`;
+    broken = null; anim.ok = false; render();
+  }
+}
+function showHop(i) {
+  const h = HOPS[i];
+  $('detail').innerHTML = `<div class="kicker">${esc(h.kind)}</div><h3>${esc(h.name)}</h3><p>${esc(h.what)}</p><div class="cmd">${esc(h.yaml)}</div>`;
+}
+function renderFaults() {
+  if (mode === 'guess') {
+    $('faultBox').innerHTML = '<p style="margin:0;color:var(--muted)">A random fault is picked (or none). Send the request and diagnose from what the terminal shows.</p>';
+    return;
+  }
+  $('faultBox').innerHTML = FAULTS.map(f => `<label><input type="radio" name="fault" value="${f.id}" ${f === fault ? 'checked' : ''}><span>${esc(f.label)}<small>${esc(f.hint)}</small></span></label>`).join('');
+}
+$('faultBox').addEventListener('change', e => { if (e.target.name === 'fault') { fault = FAULTS.find(f => f.id === e.target.value); broken = null; anim = null; render(); } });
+function setMode(m) {
+  mode = m; $('mExplore').setAttribute('aria-pressed', m === 'explore'); $('mGuess').setAttribute('aria-pressed', m === 'guess');
+  anim = null; broken = null; selHop = null; secret = null;
+  $('score').textContent = m === 'guess' ? `${score.ok}/${score.n} correct` : '';
+  renderFaults(); render(); intro();
+}
+$('mExplore').onclick = () => setMode('explore');
+$('mGuess').onclick = () => setMode('guess');
+$('send').onclick = () => {
+  selHop = null;
+  if (mode === 'guess') { secret = FAULTS[Math.floor(Math.random() * FAULTS.length)]; run(secret); }
+  else run(fault);
+};
+$('scene').addEventListener('click', e => {
+  const g = e.target.closest('[data-hop]'); if (!g) return;
+  const i = Number(g.dataset.hop);
+  if (mode === 'guess' && secret && anim && anim.done && !guessed) {
+    guessed = true; score.n++;
+    const target = secret.at === null ? HOPS.length - 1 : secret.at;
+    const hit = i === target || (secret.at !== null && Math.abs(i - target) <= 1 && ['route', 'path', 'selector', 'ready'].includes(secret.id) && [4, 5, 6].includes(i));
+    if (hit) score.ok++;
+    $('score').textContent = `${score.ok}/${score.n} correct`;
+    broken = secret.at; anim.ok = secret.code === 'ok'; render();
+    explain(secret, `<p class="verdict ${hit ? 'ok' : 'bad'}">${hit ? 'Well spotted.' : `No: the fault was at ${esc(secret.at === null ? 'nowhere' : HOPS[secret.at].name)}.`}</p>`);
+    return;
+  }
+  selHop = i; render(); showHop(i);
+});
+function intro() {
+  $('term').innerHTML = '<span class="p">$ curl -sv https://shop.example.com/api</span>\n<span class="p">Press "Send request".</span>';
+  if (mode === 'explore') $('detail').innerHTML = '<div class="kicker">How to read it</div><h3>Eight hops, three worlds</h3><p>The internet (your laptop and DNS), AWS (the load balancer) and the cluster (Gateway, route, Service, EndpointSlice and pod). Click any block to see what it does and which object configures it.</p><div class="real">The symptom is your main clue: does not resolve = DNS; timeout = network or VPN; TLS error = certificate; 404 from Envoy = route; 503 from Envoy = no healthy or reachable pods.</div>';
+  else $('detail').innerHTML = '<div class="kicker">Guess where it breaks</div><h3>Blind diagnosis</h3><p>Like being on call: all you see is what curl returns. Send the request and point at the broken hop.</p>';
+}
+
+renderFaults(); render(); intro();
+requestAnimationFrame(tick);
+})();
+</script>

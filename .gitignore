@@ -3,3 +3,4 @@
 .DS_Store
 # Local results of ./lab.sh check
 .progress
+.progress.html

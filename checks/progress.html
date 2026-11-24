@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lab progress</title>
+<style>
+/* Template for ./lab.sh progress --open. lab.sh replaces the two placeholders below and writes .progress.html. */
+:root{--bg:#121416;--panel:#191c1f;--line:#2a2f34;--fg:#e8ebee;--muted:#98a1a9;--ok:#5fd39a;--next:#6fb3ff;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;--sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;color-scheme:dark}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:14px;line-height:1.5}
+.wrap{max-width:1180px;margin:0 auto;padding:20px max(16px,env(safe-area-inset-left,0px));display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:20px}
+@media (max-width:960px){.wrap{grid-template-columns:minmax(0,1fr)}}
+h1{font-family:var(--mono);font-size:15px;letter-spacing:.06em;text-transform:uppercase;margin:0 0 4px}
+.sub{color:var(--muted);margin:0 0 14px}
+.stage{border:1px solid var(--line);border-radius:10px;overflow:hidden}
+svg{display:block;width:100%;height:auto}
+.bar{display:flex;gap:4px;margin:14px 0 0}
+.bar i{flex:1;height:6px;border-radius:3px;background:#262b30}
+.bar i.on{background:var(--ok)}
+ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+li{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:grid;grid-template-columns:28px minmax(0,1fr);gap:10px}
+li.done{border-color:#2c5a45}
+li.next{border-color:var(--next);box-shadow:inset 0 0 0 1px var(--next)}
+.n{font-family:var(--mono);font-weight:600;font-size:13px;width:24px;height:24px;border-radius:6px;display:grid;place-items:center;background:#262b30}
+li.done .n{background:var(--ok);color:#0b1a12}
+li.next .n{background:var(--next);color:#0b1520}
+.t{font-weight:600}
+.d{color:var(--muted);font-size:13px}
+code{font-family:var(--mono);font-size:12px;background:#0e1012;border:1px solid var(--line);border-radius:4px;padding:1px 5px}
+</style>
+<body>
+<div class="wrap">
+  <section>
+    <h1 id="title"></h1>
+    <p class="sub" id="sub"></p>
+    <div class="stage"><svg id="scene" role="img"></svg></div>
+    <div class="bar" id="bar"></div>
+  </section>
+  <aside><ol id="list"></ol></aside>
+</div>
+<script>
+const PROGRESS = /*PROGRESS*/{};
+const LANG = /*LANG*/'en';
+const L = {
+  en: { title: 'Lab progress', sub: n => `${n} of 9 levels passed. The steps rise with the difficulty; green ones are done, blue is next.`, next: 'Next', done: 'Passed', run: 'Check it with',
+    levels: [['Fundamentals','Pods, namespaces, kubectl, events'],['Workloads','Deployment, StatefulSet, DaemonSet, Job, probes'],['Networking','Service, DNS, Gateway API, NetworkPolicy'],['Config and identity','Secrets, External Secrets, RBAC'],['Scheduling and nodes','Requests, Pending, drain, PDB, priority'],['Helm and GitOps','Charts, Argo CD, CI-style bump'],['Storage and cloud','PVCs, zonal volumes, Terraform'],['Observability','Prometheus, Grafana, alerts'],['Operations','Diagnosis method, five faults']] },
+  es: { title: 'Progreso del lab', sub: n => `${n} de 9 niveles superados. Los escalones suben con la dificultad; en verde los hechos, en azul el siguiente.`, next: 'Siguiente', done: 'Superado', run: 'Corrígelo con',
+    levels: [['Fundamentos','Pods, namespaces, kubectl, eventos'],['Workloads','Deployment, StatefulSet, DaemonSet, Job, probes'],['Red','Service, DNS, Gateway API, NetworkPolicy'],['Configuración e identidad','Secrets, External Secrets, RBAC'],['Scheduling y nodos','Requests, Pending, drain, PDB, prioridad'],['Helm y GitOps','Charts, Argo CD, bump como la CI'],['Almacenamiento y nube','PVC, volúmenes por zona, Terraform'],['Observabilidad','Prometheus, Grafana, alertas'],['Operación','Método de diagnóstico, cinco averías']] }
+}[LANG === 'es' ? 'es' : 'en'];
+document.documentElement.lang = LANG;
+document.title = L.title;
+const done = i => Boolean(PROGRESS[String(i)]);
+const count = [1,2,3,4,5,6,7,8,9].filter(done).length;
+const next = [1,2,3,4,5,6,7,8,9].find(i => !done(i));
+document.getElementById('title').textContent = L.title;
+document.getElementById('sub').textContent = L.sub(count);
+document.getElementById('bar').innerHTML = [1,2,3,4,5,6,7,8,9].map(i => `<i class="${done(i) ? 'on' : ''}"></i>`).join('');
+
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const S = 22, C = Math.cos(Math.PI / 6);
+const P = (x, y, z = 0) => [(x - y) * C * S, (x + y) * 0.5 * S - z * S];
+const pts = a => a.map(p => P(...p).map(n => n.toFixed(1)).join(',')).join(' ');
+function box(x, y, z, w, d, h, c) {
+  const t = [[x,y,z+h],[x+w,y,z+h],[x+w,y+d,z+h],[x,y+d,z+h]], l = [[x,y+d,z],[x+w,y+d,z],[x+w,y+d,z+h],[x,y+d,z+h]], r = [[x+w,y,z],[x+w,y+d,z],[x+w,y+d,z+h],[x+w,y,z+h]];
+  const s = `stroke="${c.s}" stroke-width="1" stroke-linejoin="round"`;
+  return `<polygon points="${pts(l)}" fill="${c.l}" ${s}/><polygon points="${pts(r)}" fill="${c.r}" ${s}/><polygon points="${pts(t)}" fill="${c.t}" ${s}/>`;
+}
+const GREY = { t: '#3a3f45', l: '#24282c', r: '#2d3237', s: '#5d656c' };
+const GREEN = { t: '#2f6b51', l: '#1a3a2c', r: '#224a39', s: '#5fd39a' };
+const BLUE = { t: '#2c4f73', l: '#1a2d42', r: '#213a55', s: '#6fb3ff' };
+let out = '';
+const pos = i => [i * 2.6, -i * 2.6]; // a staircase that rises left to right
+const all = [];
+for (let i = 1; i <= 9; i++) {
+  const [x, y] = pos(i - 1), h = 0.4 + i * 0.32;
+  const c = done(i) ? GREEN : i === next ? BLUE : GREY;
+  all.push(P(x, y, 0), P(x + 2.2, y + 2.2, 0), P(x, y, h + 2));
+  out += box(x, y, 0, 2.2, 2.2, h, c);
+  const [sx, sy] = P(x + 1.1, y + 1.1, h);
+  out += `<text x="${sx.toFixed(1)}" y="${(sy + 5).toFixed(1)}" text-anchor="middle" font-family="JetBrains Mono,ui-monospace,Menlo,monospace" font-size="14" font-weight="600" fill="#e8ebee">${i}</text>`;
+  const lift = i % 2 ? 34 : 64, label = L.levels[i - 1][0], w = label.length * 6.6 + 16;
+  out += `<line x1="${sx}" y1="${sy - 12}" x2="${sx}" y2="${sy - lift + 9}" stroke="${c.s}"/><rect x="${(sx - w / 2).toFixed(1)}" y="${(sy - lift - 9).toFixed(1)}" width="${w.toFixed(1)}" height="18" rx="3" fill="#0e1012" stroke="${c.s}"/><text x="${sx.toFixed(1)}" y="${(sy - lift + 4).toFixed(1)}" text-anchor="middle" font-family="JetBrains Mono,ui-monospace,Menlo,monospace" font-size="11" fill="#e8ebee">${esc(label.toUpperCase())}</text>`;
+  all.push([sx - w / 2, sy - lift - 12], [sx + w / 2, sy - lift - 12]);
+}
+const xs = all.map(p => p[0]), ys = all.map(p => p[1]);
+const minX = Math.min(...xs) - 20, maxX = Math.max(...xs) + 20, minY = Math.min(...ys) - 10, maxY = Math.max(...ys) + 20;
+const svg = document.getElementById('scene');
+svg.setAttribute('viewBox', `${minX} ${minY} ${maxX - minX} ${maxY - minY}`);
+svg.setAttribute('aria-label', L.sub(count));
+svg.innerHTML = out;
+
+document.getElementById('list').innerHTML = L.levels.map(([t, d], k) => {
+  const i = k + 1, cls = done(i) ? 'done' : i === next ? 'next' : '';
+  const state = done(i) ? `${L.done} · ${PROGRESS[String(i)]}` : i === next ? L.next : '';
+  const cmd = `${LANG === 'es' ? 'LAB_LANG=es ' : ''}./lab.sh check ${i}`;
+  return `<li class="${cls}"><span class="n">${i}</span><div><div class="t">${esc(t)}${state ? ` <span class="d">· ${esc(state)}</span>` : ''}</div><div class="d">${esc(d)}</div>${i === next ? `<div class="d">${esc(L.run)} <code>${esc(cmd)}</code></div>` : ''}</div></li>`;
+}).join('');
+</script>
+</body>
+</html>
