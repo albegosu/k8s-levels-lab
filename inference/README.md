@@ -10,6 +10,19 @@ Short daily notes on serving LLMs, written while learning: one concept per note,
 | 2 · Why it is fast or slow | Dec 7 – Dec 18 | GPU instances on AWS (g5, g6, p5, inf2), KV cache, PagedAttention, continuous batching, prefix caching | Same course + [vLLM docs](https://docs.vllm.ai/) |
 | 3 · Running it as a platform | Dec 21 – Jan 29 | gateway (LiteLLM): virtual keys, budgets, rate limits, fallbacks; GPUs in Kubernetes (device plugin / GPU Operator, taints, GPU node pools); metrics (TTFT, inter-token latency, tokens/s, queue length, KV cache use); distributed serving (llm-d) | [LiteLLM proxy docs](https://docs.litellm.ai/docs/proxy/deploy), [llm-d](https://llm-d.ai/) |
 
+## Notes
+
+| # | Note | Day |
+| --- | --- | --- |
+| 01 | [What serving a model means](notes/01-serving-a-model.md) | Nov 25 |
+| 02 | [Tokens](notes/02-tokens.md) | Nov 26 |
+| 03 | [Prompt vs completion tokens](notes/03-prompt-vs-completion.md) | Nov 27 |
+| 04 | [Prefill and decode](notes/04-prefill-and-decode.md) | Nov 30 |
+| 05 | [VRAM and model size](notes/05-vram-and-model-size.md) | Dec 1 |
+| 06 | [Quantization](notes/06-quantization.md) | Dec 2 |
+| 07 | [Context window](notes/07-context-window.md) | Dec 3 |
+| 08 | [The OpenAI-compatible API](notes/08-openai-compatible-api.md) | Dec 4 |
+
 ## Note format
 
 One file per concept, `inference/notes/NN-slug.md`:
