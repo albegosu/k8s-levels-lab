@@ -20,6 +20,10 @@ Level 5 reproduces a real incident: a DaemonSet rollout gets stuck because the n
 | [8](level-8/README.md) | Observability | Prometheus, Grafana, ServiceMonitor, alerts |
 | [9](level-9/README.md) | Operations | A diagnosis method and five faults to find blind |
 
+## Preparing for the CKAD
+
+The [CKAD track](ckad/README.md) adds twelve timed drills for what the exam asks and the levels do not: CronJobs, native sidecars, SecurityContext, quotas, Ingress, Kustomize, Helm, canary, RBAC, CRDs and building an image. Run one with `./lab.sh drill <n>` and grade it with `./lab.sh drill <n> check`.
+
 ## Two maps
 
 **See it in 3D:** an [interactive isometric cluster](https://albegosu.github.io/k8s-levels-lab/) where you can scale, delete pods, roll out a new version, drain a node and add a Karpenter node, and watch each controller react. It is a single HTML file in [`docs/`](docs/index.html), so you can also open it locally. Its companion, the [path of a request](https://albegosu.github.io/k8s-levels-lab/request.html), follows `curl` through DNS, the load balancer, Envoy, the HTTPRoute and the Service to the pod, with nine faults to switch on and a blind-diagnosis mode.

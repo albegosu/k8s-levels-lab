@@ -22,6 +22,10 @@ Cada nivel tiene su `README.es.md`.
 | [8](level-8/README.es.md) | Observabilidad | Prometheus, Grafana, ServiceMonitor, alertas |
 | [9](level-9/README.es.md) | Operación | Un método de diagnóstico y cinco averías para encontrar a ciegas |
 
+## Preparar el CKAD
+
+La [pista CKAD](ckad/README.es.md) añade doce ejercicios contra reloj para lo que pide el examen y no cubren los niveles: CronJobs, sidecars nativos, SecurityContext, quotas, Ingress, Kustomize, Helm, canary, RBAC, CRDs y construir una imagen. Arranca uno con `./lab.sh drill <n>` y corrígelo con `./lab.sh drill <n> check`.
+
 ## Dos mapas
 
 **Verlo en 3D:** un [clúster isométrico interactivo](https://albegosu.github.io/k8s-levels-lab/es.html) donde puedes escalar, borrar pods, desplegar una versión nueva, hacer drain de un nodo y añadir uno de Karpenter, y ver cómo reacciona cada controlador. Es un único HTML en [`docs/`](docs/es.html), así que también puedes abrirlo en local. Lo acompaña el [recorrido de una petición](https://albegosu.github.io/k8s-levels-lab/request.es.html): sigue a `curl` por el DNS, el balanceador, Envoy, la HTTPRoute y el Service hasta el pod, con nueve averías que puedes activar y un modo de diagnóstico a ciegas.

@@ -1,0 +1,18 @@
+# Drill 10 starting point: three separate faults. Find them from kubectl, not by reading this file.
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: broken, namespace: ckad-10}
+spec:
+  replicas: 2
+  selector: {matchLabels: {app: broken}}
+  template:
+    metadata: {labels: {app: broken}}
+    spec:
+      containers:
+        - name: app
+          image: ghcr.io/stefanprodan/podinfo:6.7.l
+          command: ["./podinfo", "--port=8080"]
+          resources:
+            requests: {memory: 64Gi}
+          readinessProbe:
+            httpGet: {path: /health, port: 9090}

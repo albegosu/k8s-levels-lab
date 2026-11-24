@@ -4,3 +4,4 @@
 # Local results of ./lab.sh check
 .progress
 .progress.html
+.drill-*
