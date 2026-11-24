@@ -20,6 +20,55 @@ Level 5 reproduces a real incident: a DaemonSet rollout gets stuck because the n
 | [8](level-8/README.md) | Observability | Prometheus, Grafana, ServiceMonitor, alerts |
 | [9](level-9/README.md) | Operations | A diagnosis method and five faults to find blind |
 
+## Two maps
+
+How a cluster works: everything goes through the API. The control plane decides and the nodes do the work.
+
+```mermaid
+flowchart TB
+  you["<b>You, Argo CD or Headlamp</b><br/>send YAML to the API"]
+  subgraph cp["Control plane · run by the provider on EKS, GKE, AKS"]
+    api["<b>API server</b><br/>the only door: every other part talks only to it"]
+    etcd["<b>etcd</b><br/>stores the desired and actual state"]
+    sched["<b>Scheduler</b><br/>picks a node for each Pending pod"]
+    ctrl["<b>Controllers</b><br/>compare desired and actual,<br/>create or delete pods"]
+  end
+  subgraph n1["lab-worker2 · plays a Karpenter node"]
+    k1["<b>kubelet</b><br/>starts the pods the API assigns"]
+    r1["<b>containerd</b><br/>pulls images, creates containers"]
+    p1["app pods: shop…"]
+  end
+  subgraph n2["lab-worker · plays the system node group"]
+    k2["<b>kubelet</b><br/>starts the pods the API assigns"]
+    r2["<b>containerd</b><br/>pulls images, creates containers"]
+    p2["platform pods: CoreDNS, Envoy…"]
+  end
+  you --> api
+  api <--> etcd
+  api <--> sched
+  api <--> ctrl
+  api <-- "kubelets ask the API for work and report back" --> k1
+  api <--> k2
+  k1 --> r1 --> p1
+  k2 --> r2 --> p2
+```
+
+That is why `kubectl apply` starts nothing by itself: it writes the desired state, and each part does its job.
+
+How the objects connect: everything revolves around the pod. The level that covers each object is in brackets.
+
+```mermaid
+flowchart LR
+  dep["<b>Deployment</b><br/>replicas and version (2)"] --> rs["<b>ReplicaSet</b><br/>keeps N pods (2)"] --> pod
+  es["<b>ExternalSecret</b><br/>copies a cloud secret (4)"] --> sec["<b>Secret and ConfigMap</b><br/>env vars and files (4)"] --> pod
+  gw["<b>Gateway</b><br/>traffic entry (3)"] --> rt["<b>HTTPRoute</b><br/>host and path (3)"] --> svc["<b>Service</b><br/>spreads across pods (3)"] --> pod
+  pod["<b>Pods</b><br/>your containers (1)"] --> node["<b>Node</b><br/>chosen by the scheduler (5)"]
+  pod --> pvc["<b>PVC</b><br/>persistent disk (7)"]
+  style pod stroke-width:3px
+```
+
+When something breaks, follow the arrows backwards. No pods: check the Deployment and ReplicaSet. Pod does not start: check its secrets, its node and its disk. Pod runs but gets no traffic: check the Service, HTTPRoute and Gateway.
+
 ## Requirements
 
 - Docker (Docker Desktop, OrbStack or Colima) with at least 6 GB of memory; 8 GB if you install monitoring.

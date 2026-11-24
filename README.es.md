@@ -22,6 +22,55 @@ Cada nivel tiene su `README.es.md`.
 | [8](level-8/README.es.md) | Observabilidad | Prometheus, Grafana, ServiceMonitor, alertas |
 | [9](level-9/README.es.md) | Operación | Un método de diagnóstico y cinco averías para encontrar a ciegas |
 
+## Dos mapas
+
+Cómo funciona un clúster: todo pasa por la API. El control plane decide y los nodos ejecutan.
+
+```mermaid
+flowchart TB
+  you["<b>Tú, Argo CD o Headlamp</b><br/>mandan el YAML a la API"]
+  subgraph cp["Control plane · en EKS, GKE o AKS lo gestiona el proveedor"]
+    api["<b>API server</b><br/>la única puerta: todo lo demás habla solo con ella"]
+    etcd["<b>etcd</b><br/>guarda el estado deseado y el real"]
+    sched["<b>Scheduler</b><br/>elige nodo para cada pod Pending"]
+    ctrl["<b>Controladores</b><br/>comparan deseado y real,<br/>crean o borran pods"]
+  end
+  subgraph n1["lab-worker2 · imita un nodo de Karpenter"]
+    k1["<b>kubelet</b><br/>arranca los pods que le asigna la API"]
+    r1["<b>containerd</b><br/>descarga imágenes, crea contenedores"]
+    p1["pods de las apps: shop…"]
+  end
+  subgraph n2["lab-worker · imita el node group de sistema"]
+    k2["<b>kubelet</b><br/>arranca los pods que le asigna la API"]
+    r2["<b>containerd</b><br/>descarga imágenes, crea contenedores"]
+    p2["pods de plataforma: CoreDNS, Envoy…"]
+  end
+  you --> api
+  api <--> etcd
+  api <--> sched
+  api <--> ctrl
+  api <-- "los kubelets piden su trabajo a la API y le informan" --> k1
+  api <--> k2
+  k1 --> r1 --> p1
+  k2 --> r2 --> p2
+```
+
+Por eso un `kubectl apply` no arranca nada él solo: deja escrito el estado deseado y cada pieza hace su parte.
+
+Cómo se conectan los objetos: todo gira alrededor del pod. Entre paréntesis, el nivel donde se explica cada uno.
+
+```mermaid
+flowchart LR
+  dep["<b>Deployment</b><br/>réplicas y versión (2)"] --> rs["<b>ReplicaSet</b><br/>mantiene N pods (2)"] --> pod
+  es["<b>ExternalSecret</b><br/>copia un secreto de la nube (4)"] --> sec["<b>Secret y ConfigMap</b><br/>variables y ficheros (4)"] --> pod
+  gw["<b>Gateway</b><br/>entrada del tráfico (3)"] --> rt["<b>HTTPRoute</b><br/>host y ruta (3)"] --> svc["<b>Service</b><br/>reparte entre pods (3)"] --> pod
+  pod["<b>Pods</b><br/>tus contenedores (1)"] --> node["<b>Nodo</b><br/>lo elige el scheduler (5)"]
+  pod --> pvc["<b>PVC</b><br/>disco persistente (7)"]
+  style pod stroke-width:3px
+```
+
+Cuando algo falla, sigue las flechas hacia atrás. Si no hay pods, mira el Deployment y el ReplicaSet. Si el pod no arranca, mira sus secretos, su nodo y su disco. Si arranca pero no le llega tráfico, mira el Service, la HTTPRoute y el Gateway.
+
 ## Requisitos
 
 - Docker (Docker Desktop, OrbStack o Colima) con al menos 6 GB de memoria; 8 GB si instalas la monitorización.
