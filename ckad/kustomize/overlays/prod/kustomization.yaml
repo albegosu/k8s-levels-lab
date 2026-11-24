@@ -1,0 +1,6 @@
+# Drill 6: finish this overlay. It must deploy into ckad-6, prefix names with prod-,
+# run 3 replicas, label everything env=prod and use nginx:1.27-alpine.
+namespace: ckad-6
+namePrefix: prod-
+resources:
+  - ../../base

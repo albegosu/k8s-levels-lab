@@ -1,0 +1,27 @@
+# Drill 8 starting point. The Service only reaches v1, and v2 is not labelled for it.
+apiVersion: v1
+kind: Service
+metadata: {name: shop, namespace: ckad-8}
+spec:
+  selector: {app: shop, version: v1}
+  ports: [{port: 80, targetPort: 80}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: shop-v1, namespace: ckad-8}
+spec:
+  replicas: 2
+  selector: {matchLabels: {app: shop, version: v1}}
+  template:
+    metadata: {labels: {app: shop, version: v1}}
+    spec: {containers: [{name: web, image: nginx:1.27}]}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: shop-v2, namespace: ckad-8}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: shop-canary, version: v2}}
+  template:
+    metadata: {labels: {app: shop-canary, version: v2}}
+    spec: {containers: [{name: web, image: nginx:1.27-alpine}]}

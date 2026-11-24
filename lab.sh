@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Kubernetes lab, level by level.
-# Usage: ./lab.sh up | addon <name> | check <level|all> | progress [--open] | status | down
+# Usage: ./lab.sh up | addon <name> | check <level|all> | drill <n> [check] | progress [--open] | status | down
 set -euo pipefail
 cd "$(dirname "$0")"
 CTX=kind-lab
@@ -68,6 +68,20 @@ case "${1:-}" in
     fi
     [[ -f "level-$lvl/check.sh" ]] || { echo "No check for level $lvl"; exit 1; }
     bash "level-$lvl/check.sh" ;;
+  drill)
+    # CKAD drills: ./lab.sh drill <n> starts the clock and sets up ckad-<n>; ./lab.sh drill <n> check grades it.
+    n=${2:?"drill: 1-12"}; ns="ckad-$n"; stamp=".drill-$n"
+    if [[ ${3:-} == check ]]; then
+      bash ckad/checks/drill.sh "$n" || rc=$?
+      [[ -f $stamp ]] && echo "Time: $(( ($(date +%s) - $(cat "$stamp")) / 60 )) min (target in ckad/README.md)"
+      exit "${rc:-0}"
+    fi
+    k get ns "$ns" >/dev/null 2>&1 || k create ns "$ns" >/dev/null
+    for f in ckad/manifests/drill-"$n"-*.yaml; do [[ -f $f ]] && k apply -f "$f" >/dev/null; done
+    date +%s > "$stamp"
+    echo "Drill $n started in namespace $ns. Task: ckad/README.md#drill-$n"
+    echo "Tip: kubectl config set-context --current --namespace=$ns"
+    echo "When done: ./lab.sh drill $n check" ;;
   progress)
     done_n=0; G=; N=; [[ -t 1 ]] && G=$'\e[32m' N=$'\e[0m'
     for i in 1 2 3 4 5 6 7 8 9; do
@@ -95,5 +109,5 @@ PY
     fi ;;
   status) k get nodes -L role,karpenter.sh/nodepool; echo; h list -A ;;
   down) kind delete cluster --name lab ;;
-  *) echo "Usage: ./lab.sh up | addon <name> | check <level|all> | progress [--open] | status | down"; exit 1 ;;
+  *) echo "Usage: ./lab.sh up | addon <name> | check <level|all> | drill <n> [check] | progress [--open] | status | down"; exit 1 ;;
 esac
