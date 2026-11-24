@@ -52,6 +52,14 @@ curl -s -H 'Host: shop.lab.local' localhost:8080 | head                         
 kubectl delete -f level-3/networkpolicy.yaml
 ```
 
+## Check your work
+
+```bash
+./lab.sh check 3
+```
+
+It checks the endpoints and the HTTPRoute status, and sends a real request through Envoy from inside the cluster.
+
 ## Check yourself
 
 - [ ] Why does a Service with no endpoints fail even if the Deployment exists?

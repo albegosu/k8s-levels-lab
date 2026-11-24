@@ -51,6 +51,14 @@ kubectl auth can-i list pods -n sandbox --as=system:serviceaccount:shop:reader  
 kubectl auth can-i --list -n shop --as=system:serviceaccount:shop:reader
 ```
 
+## Corrige tu trabajo
+
+```bash
+LAB_LANG=es ./lab.sh check 4
+```
+
+Comprueba el camino del gestor de secretos al pod y que `reader` no puede leer Secrets.
+
 ## Comprueba que lo has entendido
 
 - [ ] ¿Dónde se cambia un secreto y qué tiene que pasar para que la app lo coja?

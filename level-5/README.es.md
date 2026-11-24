@@ -98,6 +98,14 @@ kubectl delete deploy app-load -n shop --ignore-not-found
 kubectl delete -f level-5/overprovisioning.yaml --ignore-not-found
 ```
 
+## Corrige tu trabajo
+
+```bash
+LAB_LANG=es ./lab.sh check 5
+```
+
+Comprueba que el incidente ha terminado y el clúster queda limpio: sin cordon, todos los agentes listos y nada en Pending. Lánzalo después de limpiar.
+
 ## Comprueba que lo has entendido
 
 - [ ] ¿Por qué un nodo con memoria real libre puede rechazar un pod?

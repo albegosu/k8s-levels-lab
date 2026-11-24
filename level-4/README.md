@@ -51,6 +51,14 @@ kubectl auth can-i list pods -n sandbox --as=system:serviceaccount:shop:reader  
 kubectl auth can-i --list -n shop --as=system:serviceaccount:shop:reader
 ```
 
+## Check your work
+
+```bash
+./lab.sh check 4
+```
+
+It checks the path from the secret store to the pod, and that `reader` cannot read Secrets.
+
 ## Check yourself
 
 - [ ] Where do you change a secret, and what must happen for the app to pick it up?

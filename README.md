@@ -97,6 +97,18 @@ Optional add-ons, when you reach their level:
 
 Run every command from the repository root. Always check your context first: `kubectl config current-context` must say `kind-lab`.
 
+## Check your progress
+
+Every level ends with a check that inspects the cluster and tells you what is done and what is missing, with a hint for each failed task:
+
+```bash
+./lab.sh check 3      # one level
+./lab.sh check all    # every level
+./lab.sh progress     # which levels you have passed
+```
+
+A level counts as passed when all its tasks pass; the date is kept in `.progress`, outside Git. Set `LAB_LANG=es` for messages in Spanish.
+
 ## The nodes
 
 | Node | Plays | Notes |

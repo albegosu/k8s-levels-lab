@@ -1,3 +1,5 @@
 # Local GitOps repo created by level-6/gitops.sh
 .gitops/
 .DS_Store
+# Local results of ./lab.sh check
+.progress

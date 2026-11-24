@@ -63,6 +63,14 @@ kubectl get pods -n shop-lab -w     # selfHeal brings it back to 2
 
 Real rollback: `git -C .gitops/platform-gitops-lab revert --no-edit HEAD`.
 
+## Check your work
+
+```bash
+./lab.sh check 6
+```
+
+Run it before `./level-6/gitops.sh down`. It checks that Argo CD is Synced and Healthy, the bump is live and selfHeal kept 2 replicas.
+
 ## Clean up
 
 ```bash

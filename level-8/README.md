@@ -51,6 +51,14 @@ kubectl port-forward svc/kps-kube-prometheus-stack-alertmanager -n observability
 
 At `http://localhost:9090/alerts` the alert goes from `Pending` to `Firing` after 2 minutes, and appears at `http://localhost:9093`.
 
+## Check your work
+
+```bash
+./lab.sh check 8
+```
+
+It checks that Prometheus scrapes `shop-web` and has loaded the alert rule.
+
 ## Check yourself
 
 - [ ] Where do you look for the logs of a pod that no longer exists?

@@ -38,6 +38,14 @@ kubectl explain pod.spec.containers.image
 | `kubectl get events --sort-by=.lastTimestamp` | What happened in a namespace |
 | `kubectl get -o yaml` | The whole object, `spec` and `status` |
 
+## Check your work
+
+```bash
+./lab.sh check 1
+```
+
+Mission: after the exercises, leave a pod `hello` running in `sandbox` with the label `level=1`, and remove `broken`.
+
 ## Check yourself
 
 - [ ] Why does a pod deleted by hand not come back?

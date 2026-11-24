@@ -63,6 +63,14 @@ kubectl get jobs,pods -n shop
 kubectl logs job/db-migrate -n shop
 ```
 
+## Corrige tu trabajo
+
+```bash
+LAB_LANG=es ./lab.sh check 2
+```
+
+Comprueba que los cuatro controladores acaban sanos y que `shop-web` usa podinfo 6.7.1.
+
 ## Comprueba que lo has entendido
 
 - [ ] Explica la cadena Deployment → ReplicaSet → Pod.

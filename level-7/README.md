@@ -40,6 +40,14 @@ grep -n 'module "' *.tf
 terraform fmt -check -recursive   # lists badly formatted files; changes nothing
 ```
 
+## Check your work
+
+```bash
+./lab.sh check 7
+```
+
+It checks that the file outlived the pod and that the volume is pinned to one node.
+
 ## Check yourself
 
 - [ ] Why can a pod with a volume stay Pending while other nodes are free?

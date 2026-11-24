@@ -63,6 +63,14 @@ kubectl get jobs,pods -n shop
 kubectl logs job/db-migrate -n shop
 ```
 
+## Check your work
+
+```bash
+./lab.sh check 2
+```
+
+It checks that the four controllers end healthy and that `shop-web` runs podinfo 6.7.1.
+
 ## Check yourself
 
 - [ ] Explain the Deployment → ReplicaSet → Pod chain.

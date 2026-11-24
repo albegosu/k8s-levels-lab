@@ -40,6 +40,14 @@ grep -n 'module "' *.tf
 terraform fmt -check -recursive   # lista los ficheros mal formateados; no cambia nada
 ```
 
+## Corrige tu trabajo
+
+```bash
+LAB_LANG=es ./lab.sh check 7
+```
+
+Comprueba que el fichero sobrevivió al pod y que el volumen está atado a un nodo.
+
 ## Comprueba que lo has entendido
 
 - [ ] ¿Por qué un pod con volumen puede quedarse Pending aunque haya otros nodos libres?

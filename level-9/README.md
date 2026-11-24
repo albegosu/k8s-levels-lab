@@ -43,6 +43,14 @@ kubectl logs -n faults deploy/<name> --previous
 kubectl get svc,endpointslices -n faults
 ```
 
+## Check your work
+
+```bash
+./lab.sh check 9
+```
+
+Mission: fix the five faults in place (edit, patch or create what is missing) without deleting the Deployments. The check passes when all five run.
+
 Then compare with [solutions.md](solutions.md).
 
 ```bash

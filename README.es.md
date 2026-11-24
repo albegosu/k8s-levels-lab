@@ -99,6 +99,18 @@ Añadidos opcionales, cuando llegues a su nivel:
 
 Ejecuta todos los comandos desde la raíz del repositorio. Comprueba siempre el contexto: `kubectl config current-context` tiene que decir `kind-lab`.
 
+## Corregir tu progreso
+
+Cada nivel acaba con un check que mira el clúster y te dice qué está hecho y qué falta, con una pista para cada tarea que falla:
+
+```bash
+LAB_LANG=es ./lab.sh check 3      # un nivel
+LAB_LANG=es ./lab.sh check all    # todos
+./lab.sh progress                 # qué niveles has superado
+```
+
+Un nivel cuenta como superado cuando pasan todas sus tareas; la fecha se guarda en `.progress`, fuera de Git. Si tu sistema está en español, `LAB_LANG=es` ya viene por defecto.
+
 ## Los nodos
 
 | Nodo | Imita | Notas |

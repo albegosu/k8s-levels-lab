@@ -98,6 +98,14 @@ kubectl delete deploy app-load -n shop --ignore-not-found
 kubectl delete -f level-5/overprovisioning.yaml --ignore-not-found
 ```
 
+## Check your work
+
+```bash
+./lab.sh check 5
+```
+
+It checks that the incident is over and the cluster is clean: no cordon, every agent ready, nothing Pending. Run it after the clean-up.
+
 ## Check yourself
 
 - [ ] Why can a node with free real memory reject a pod?

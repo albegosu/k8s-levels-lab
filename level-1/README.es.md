@@ -38,6 +38,14 @@ kubectl explain pod.spec.containers.image
 | `kubectl get events --sort-by=.lastTimestamp` | Qué ha pasado en un namespace |
 | `kubectl get -o yaml` | El objeto completo, `spec` y `status` |
 
+## Corrige tu trabajo
+
+```bash
+LAB_LANG=es ./lab.sh check 1
+```
+
+Misión: al acabar los ejercicios, deja un pod `hello` corriendo en `sandbox` con la label `level=1`, y borra `broken`.
+
 ## Comprueba que lo has entendido
 
 - [ ] ¿Por qué no vuelve un pod borrado a mano?
