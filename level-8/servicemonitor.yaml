@@ -1,0 +1,13 @@
+# podinfo exposes /metrics on its http port: Prometheus scrapes it through this object.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: shop-web
+  namespace: shop
+spec:
+  selector:
+    matchLabels: {}
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s

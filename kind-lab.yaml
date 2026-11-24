@@ -1,0 +1,22 @@
+# Lab cluster: 1 control plane + 2 workers.
+# lab-worker  plays the fixed "system" node group (platform components).
+# lab-worker2 plays a small node created by Karpenter (applications). We reserve
+# memory for the "system" so its allocatable is ~2.4 GiB and it fills up quickly.
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: lab
+nodes:
+  - role: control-plane
+  - role: worker
+    labels:
+      role: system
+  - role: worker
+    labels:
+      karpenter.sh/nodepool: default
+    kubeadmConfigPatches:
+      - |
+        kind: JoinConfiguration
+        nodeRegistration:
+          kubeletExtraArgs:
+            - name: system-reserved
+              value: memory=5500Mi

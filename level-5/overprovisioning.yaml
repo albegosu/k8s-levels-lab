@@ -1,0 +1,37 @@
+# Overprovisioning: placeholder pods with negative priority that reserve room.
+# Any real pod (priority 0) can preempt them instantly.
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: overprovisioning
+value: -10
+preemptionPolicy: Never
+globalDefault: false
+description: Placeholder that gives its room to any real pod.
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: overprovisioning
+  namespace: kube-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: overprovisioning }
+  template:
+    metadata:
+      labels: { app: overprovisioning }
+    spec:
+      priorityClassName: overprovisioning
+      terminationGracePeriodSeconds: 0
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - { key: kubernetes.io/hostname, operator: In, values: [lab-worker2] }
+      containers:
+        - name: pause
+          image: registry.k8s.io/pause:3.10
+          resources:
+            requests: { cpu: 10m, memory: 128Mi }

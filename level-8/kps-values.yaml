@@ -1,0 +1,22 @@
+# kube-prometheus-stack trimmed down for a laptop with 8 GB for Docker.
+prometheus:
+  prometheusSpec:
+    retention: 6h
+    resources:
+      requests: { cpu: 100m, memory: 400Mi }
+    # Pick up ServiceMonitors and rules from every namespace.
+    serviceMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    nodeSelector: { role: system }
+alertmanager:
+  alertmanagerSpec:
+    resources:
+      requests: { cpu: 10m, memory: 32Mi }
+    nodeSelector: { role: system }
+grafana:
+  adminPassword: lab
+  nodeSelector: { role: system }
+kubeEtcd: { enabled: false }
+kubeControllerManager: { enabled: false }
+kubeScheduler: { enabled: false }
+kubeProxy: { enabled: false }

@@ -1,0 +1,49 @@
+# Non-secret config from a ConfigMap, secrets from a Secret created by External Secrets.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: shop
+  namespace: shop
+  annotations:
+    # On EKS this annotation enables IRSA. On kind it does nothing.
+    eks.amazonaws.com/role-arn: arn:aws:iam::000000000000:role/shop
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: shop-config
+  namespace: shop
+data:
+  APP_URL: https://shop.lab.local
+  LOG_CHANNEL: stderr
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shop-worker
+  namespace: shop
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: shop
+      app.kubernetes.io/component: worker
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: shop
+        app.kubernetes.io/component: worker
+    spec:
+      serviceAccountName: shop
+      containers:
+        - name: worker
+          image: busybox:1.36
+          command: ["sh", "-c", "echo APP_URL=$APP_URL; echo DATABASE_URL=$DATABASE_URL; sleep infinity"]
+          envFrom:
+            - configMapRef: { name: shop-config }
+            - secretRef: { name: shop-app }
+          resources:
+            requests: { cpu: 10m, memory: 256Mi }
+            limits: { memory: 256Mi }

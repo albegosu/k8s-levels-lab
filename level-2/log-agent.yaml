@@ -1,0 +1,36 @@
+# Plays a log collector (Grafana Alloy, Fluent Bit...): one pod per worker node.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: observability
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: log-agent
+  namespace: observability
+spec:
+  selector:
+    matchLabels: { app: log-agent }
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      # The new pod starts before the old one is removed: both need room on the node.
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels: { app: log-agent }
+      annotations:
+        version: "1"
+    spec:
+      containers:
+        - name: agent
+          image: busybox:1.36
+          command: ["sh", "-c", "while true; do echo collecting logs from $NODE; sleep 30; done"]
+          env:
+            - name: NODE
+              valueFrom: { fieldRef: { fieldPath: spec.nodeName } }
+          resources:
+            requests: { cpu: 10m, memory: 64Mi }
+            limits: { memory: 64Mi }

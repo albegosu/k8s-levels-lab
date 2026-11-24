@@ -1,0 +1,34 @@
+# One Argo CD Application per apps/* directory; namespace = directory name + "-lab".
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: apps
+  namespace: argocd
+spec:
+  goTemplate: true
+  generators:
+    - git:
+        repoURL: git://host.docker.internal:9418/platform-gitops-lab
+        revision: HEAD
+        directories:
+          - path: apps/*
+  template:
+    metadata:
+      name: '{{.path.basename}}-lab'
+    spec:
+      project: default
+      source:
+        repoURL: git://host.docker.internal:9418/platform-gitops-lab
+        targetRevision: HEAD
+        path: '{{.path.path}}'
+        helm:
+          releaseName: '{{.path.basename}}'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{.path.basename}}-lab'
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
