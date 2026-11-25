@@ -22,6 +22,15 @@ Short daily notes on serving LLMs, written while learning: one concept per note,
 | 06 | [Quantization](notes/06-quantization.md) | Dec 2 |
 | 07 | [Context window](notes/07-context-window.md) | Dec 3 |
 | 08 | [The OpenAI-compatible API](notes/08-openai-compatible-api.md) | Dec 4 |
+| 09 | [What matters in a GPU](notes/09-what-matters-in-a-gpu.md) | Dec 7 |
+| 10 | [GPU instances on AWS](notes/10-gpu-instances-on-aws.md) | Dec 9 |
+| 11 | [KV cache](notes/11-kv-cache.md) | Dec 10 |
+| 12 | [PagedAttention](notes/12-pagedattention.md) | Dec 11 |
+| 13 | [Continuous batching](notes/13-continuous-batching.md) | Dec 14 |
+| 14 | [Prefix caching](notes/14-prefix-caching.md) | Dec 15 |
+| 15 | [Latency and throughput](notes/15-latency-and-throughput.md) | Dec 16 |
+| 16 | [Tensor parallelism](notes/16-tensor-parallelism.md) | Dec 17 |
+| 17 | [Sizing example: a 70B model](notes/17-sizing-example.md) | Dec 18 |
 
 ## Note format
 
@@ -33,8 +42,8 @@ One file per concept, `inference/notes/NN-slug.md`:
 **In one line:** the attention keys and values of tokens already processed, kept in GPU memory so each new token does not recompute them.
 
 - Why it matters: it grows with context length × concurrent requests, so it, not the weights, usually decides how many users fit on a GPU.
-- What to watch: `vllm:gpu_cache_usage_perc` near 1 means requests queue or get preempted.
-- Try it: `curl localhost:8000/metrics | grep cache_usage`
+- What to watch: `vllm:kv_cache_usage_perc` near 1 means requests queue or get preempted.
+- Try it: `curl localhost:8000/metrics | grep kv_cache_usage`
 
 Source: <link>
 ```
