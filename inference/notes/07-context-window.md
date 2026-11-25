@@ -31,7 +31,7 @@ context window (e.g. 128k tokens)
 Ask the gateway what it says about a model:
 
 ```bash
-curl -s https://litellm.resiz.es/v1/model/info -H "Authorization: Bearer $KEY" \
+curl -s https://inference.resizes.eu/v1/model/info -H "Authorization: Bearer $KEY" \
   | jq '.data[] | {model: .model_name, max_input: .model_info.max_input_tokens, max_output: .model_info.max_output_tokens}'
 ```
 

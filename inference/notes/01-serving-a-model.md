@@ -45,10 +45,10 @@ With any LiteLLM key you have:
 
 ```bash
 # What models does the gateway offer?
-curl -s https://litellm.resiz.es/v1/models -H "Authorization: Bearer $KEY" | jq '.data[].id'
+curl -s https://inference.resizes.eu/v1/models -H "Authorization: Bearer $KEY" | jq '.data[].id'
 
 # Watch tokens arrive one by one: each "data:" line is one step of the loop
-curl -sN https://litellm.resiz.es/v1/chat/completions -H "Authorization: Bearer $KEY" \
+curl -sN https://inference.resizes.eu/v1/chat/completions -H "Authorization: Bearer $KEY" \
   -H "Content-Type: application/json" \
   -d '{"model":"<model>","stream":true,"messages":[{"role":"user","content":"Count from 1 to 20"}]}'
 ```
