@@ -34,7 +34,7 @@ The answer is either text, or a **tool call**: the model asks the harness to run
 Ask for a tool call and look at the shape of the answer:
 
 ```bash
-curl -s https://inference.resizes.eu/v1/chat/completions -H "Authorization: Bearer $KEY" \
+curl -s $BASE_URL/v1/chat/completions -H "Authorization: Bearer $KEY" \
   -H "Content-Type: application/json" -d '{
   "model":"<model>",
   "messages":[{"role":"user","content":"What is the weather in Madrid?"}],
@@ -46,7 +46,7 @@ A good setup returns `tool_calls` with `{"city":"Madrid"}`, not a text answer.
 
 ## Check yourself
 
-<details><summary>1. What does a harness change to move from one provider to Resizes?</summary>
+<details><summary>1. What does a harness change to move from one provider to a self-hosted gateway?</summary>
 The base URL, the API key and the model name. The request format stays the same.
 </details>
 <details><summary>2. The model answers well in chat but the agent never edits files. What do you check first?</summary>

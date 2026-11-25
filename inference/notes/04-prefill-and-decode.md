@@ -30,7 +30,7 @@ request ─▶ [ PREFILL: all prompt tokens at once ] ─▶ token 1 ─▶ [ de
 Stream a long answer and time the first token against the rest:
 
 ```bash
-time curl -sN https://inference.resizes.eu/v1/chat/completions -H "Authorization: Bearer $KEY" \
+time curl -sN $BASE_URL/v1/chat/completions -H "Authorization: Bearer $KEY" \
   -H "Content-Type: application/json" \
   -d '{"model":"<model>","stream":true,"messages":[{"role":"user","content":"Write 300 words about DNS"}]}' > /dev/null
 ```

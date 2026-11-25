@@ -30,18 +30,18 @@ About 99 % of the tokens are input, and most of it is the same text sent again a
 
 ## In the platform
 
-LiteLLM records both counts for every request and multiplies them by a price per input token and per output token configured for each model. For self-hosted models Resizes sets that price, so spend per key reflects real GPU use.
+LiteLLM records both counts for every request and multiplies them by a price per input token and per output token configured for each model. For self-hosted models the platform team sets that price, so spend per key reflects real GPU use.
 
 ## Try it
 
 ```bash
 # Counts for one request
-curl -s https://inference.resizes.eu/v1/chat/completions -H "Authorization: Bearer $KEY" \
+curl -s $BASE_URL/v1/chat/completions -H "Authorization: Bearer $KEY" \
   -H "Content-Type: application/json" \
   -d '{"model":"<model>","messages":[{"role":"user","content":"Explain DNS in two lines"}]}' | jq .usage
 
 # What your key has spent so far
-curl -s "https://inference.resizes.eu/key/info" -H "Authorization: Bearer $KEY" | jq '.info.spend'
+curl -s "$BASE_URL/key/info" -H "Authorization: Bearer $KEY" | jq '.info.spend'
 ```
 
 ## Check yourself
