@@ -34,19 +34,18 @@ Short daily notes on serving LLMs, written while learning: one concept per note,
 
 ## Note format
 
-One file per concept, `inference/notes/NN-slug.md`:
+One file per concept, `inference/notes/NN-slug.md`, readable in the 15-minute daily slot plus an optional 10–15 minutes of reading:
 
-```markdown
-# KV cache
+| Section | What goes in it |
+| --- | --- |
+| **In one line** | The definition, in one sentence |
+| **The idea** | The concept in plain words, with a small diagram or table when it helps |
+| **Worked example** or **In the platform** | Real numbers, or where it shows up in LiteLLM, vLLM or the agent harnesses |
+| **Try it** | Something runnable: a `curl` against the gateway, a calculation, a page to inspect |
+| **Check yourself** | Three questions, with the answers folded in `<details>` |
+| **Read more** | One or two sources, naming the exact sections to read and why |
 
-**In one line:** the attention keys and values of tokens already processed, kept in GPU memory so each new token does not recompute them.
-
-- Why it matters: it grows with context length × concurrent requests, so it, not the weights, usually decides how many users fit on a GPU.
-- What to watch: `vllm:kv_cache_usage_perc` near 1 means requests queue or get preempted.
-- Try it: `curl localhost:8000/metrics | grep kv_cache_usage`
-
-Source: <link>
-```
+Every metric name, flag and source section is checked against the live docs when the note is written.
 
 ## Level 10 plan
 
