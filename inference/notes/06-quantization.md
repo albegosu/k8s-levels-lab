@@ -25,7 +25,7 @@ Two practical points:
 
 ## The trade-off
 
-Quality loss depends on the model, the method and the task. Code and maths often suffer before chat does. Always check with your own prompts (for example, the five-task comparison of the agentic-coding talk), not only with published benchmarks.
+Quality loss depends on the model, the method and the task. Code and maths often suffer before chat does. Always check with your own prompts (for example, a handful of real tasks from your team run against both versions), not only with published benchmarks.
 
 ## Try it
 

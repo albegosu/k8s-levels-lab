@@ -29,7 +29,7 @@ In vLLM it is automatic. Rules that make it work:
 
 With several replicas of a model behind LiteLLM, a cache only helps if the next turn of a conversation lands **on the same replica**. A random load balancer spreads turns across replicas and loses most hits. That is why prefix-aware routing (phase 3, llm-d) exists.
 
-What to watch: `vllm:prefix_cache_hits` ÷ `vllm:prefix_cache_queries` is the hit rate.
+What to watch: `rate(vllm:prefix_cache_hits_total)` ÷ `rate(vllm:prefix_cache_queries_total)` is the hit rate (both count tokens).
 
 ## Try it
 

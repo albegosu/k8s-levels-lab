@@ -4,7 +4,7 @@
 
 ## The idea
 
-OpenAI's API became the common language. vLLM, LiteLLM, Ollama and most providers copy it, so the same client code works against any of them. That is what makes the harness and the model independent (the agentic-coding talk, point 1).
+OpenAI's API became the common language. vLLM, LiteLLM, Ollama and most providers copy it, so the same client code works against any of them. That is what makes the harness and the model independent: you can swap one without touching the other.
 
 ### Request and response
 
@@ -24,7 +24,7 @@ The answer is either text, or a **tool call**: the model asks the harness to run
 ### The pieces worth knowing
 
 - **`/v1/chat/completions`:** messages in, message out. The one almost everything uses.
-- **`/v1/responses`:** OpenAI's newer API. Codex only speaks this one; LiteLLM serves it in front of any model.
+- **`/v1/responses`:** OpenAI's newer API. Recent Codex versions only speak this one. Recent vLLM versions serve it natively, and LiteLLM can serve it in front of servers that only speak chat completions.
 - **`stream: true`:** tokens arrive as server-sent events (`data: …` lines) while they are generated.
 - **`usage`:** prompt and completion tokens of the request (note 03).
 - **Tool calling:** the server must turn the model's output into structured tool calls. In vLLM this needs `--enable-auto-tool-choice` and the right `--tool-call-parser` for the model family. Without it, a smart model makes a useless coding agent.
@@ -52,8 +52,8 @@ The base URL, the API key and the model name. The request format stays the same.
 <details><summary>2. The model answers well in chat but the agent never edits files. What do you check first?</summary>
 Tool calling on the server: whether the response contains `tool_calls`, and the tool-call parser configured in vLLM.
 </details>
-<details><summary>3. Why does Codex need LiteLLM in front of vLLM?</summary>
-Codex only speaks the Responses API; LiteLLM serves it and translates for the model behind.
+<details><summary>3. Codex only speaks the Responses API. How do you connect it to a self-hosted model?</summary>
+Point it at a vLLM version that serves `/v1/responses`, or put LiteLLM in front: it serves the Responses API and translates for servers that only speak chat completions. On a shared platform you want LiteLLM anyway, for keys and spend.
 </details>
 
 ## Read more (15 min)

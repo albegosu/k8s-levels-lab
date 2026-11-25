@@ -6,6 +6,16 @@ A hands-on Kubernetes lab, from zero to running a production-style EKS platform,
 
 Level 5 reproduces a real incident: a DaemonSet rollout gets stuck because the node is full of resource requests, and you fix it with cordon, drain and uncordon, then prevent it with overprovisioning.
 
+## Choose your path
+
+| If you want to… | Start here | Needs |
+| --- | --- | --- |
+| Learn Kubernetes from zero and run it like a platform team | [Levels 1–9](#levels), in order. 1–4 are the basics, 5–9 are platform work | The kind cluster below |
+| Prepare the CKAD exam | [CKAD track](ckad/README.md). Do levels 1–4 first if `kubectl` is new to you | The kind cluster below |
+| Understand how LLMs are served (GPUs, KV cache, batching, gateways) | [Inference notes](inference/README.md), in order | A browser; a local model server for the `curl` examples |
+
+The three paths are independent: you can do the inference notes without the cluster, and the CKAD track without the levels if you already know the basics.
+
 ## Levels
 
 | Level | Topic | You will practise |

@@ -41,7 +41,7 @@ GPU memory: weights + KV cache (notes 05 and 11)
 
 ## Try it
 
-With the URL of an OpenAI-compatible gateway and a key for it (`export BASE_URL=... KEY=...`):
+With `BASE_URL` and `KEY` set (see [Running the examples](../README.md#running-the-examples); a local Ollama is enough):
 
 ```bash
 # What models does the gateway offer?
