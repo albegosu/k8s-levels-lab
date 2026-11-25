@@ -31,7 +31,7 @@ GPU memory: weights + KV cache (notes 05 and 11)
 ```
 
 - **Model server** (vLLM, also TGI or llama.cpp): one process per model, pinned to its GPUs. It knows nothing about users or money.
-- **Gateway** (LiteLLM): the only thing clients talk to. It decides who may call which model and records what each key spends. At Resizes, harnesses and Agentic go through LiteLLM, never straight to vLLM.
+- **Gateway** (LiteLLM): the only thing clients talk to. It decides who may call which model and records what each key spends. Harnesses and agents go through the gateway, never straight to vLLM.
 
 ## Where the cost comes from
 
@@ -41,14 +41,14 @@ GPU memory: weights + KV cache (notes 05 and 11)
 
 ## Try it
 
-With any LiteLLM key you have:
+With the URL of an OpenAI-compatible gateway and a key for it (`export BASE_URL=... KEY=...`):
 
 ```bash
 # What models does the gateway offer?
-curl -s https://inference.resizes.eu/v1/models -H "Authorization: Bearer $KEY" | jq '.data[].id'
+curl -s $BASE_URL/v1/models -H "Authorization: Bearer $KEY" | jq '.data[].id'
 
 # Watch tokens arrive one by one: each "data:" line is one step of the loop
-curl -sN https://inference.resizes.eu/v1/chat/completions -H "Authorization: Bearer $KEY" \
+curl -sN $BASE_URL/v1/chat/completions -H "Authorization: Bearer $KEY" \
   -H "Content-Type: application/json" \
   -d '{"model":"<model>","stream":true,"messages":[{"role":"user","content":"Count from 1 to 20"}]}'
 ```
