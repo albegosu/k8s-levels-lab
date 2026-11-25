@@ -36,12 +36,12 @@ LiteLLM records both counts for every request and multiplies them by a price per
 
 ```bash
 # Counts for one request
-curl -s https://litellm.resiz.es/v1/chat/completions -H "Authorization: Bearer $KEY" \
+curl -s https://inference.resizes.eu/v1/chat/completions -H "Authorization: Bearer $KEY" \
   -H "Content-Type: application/json" \
   -d '{"model":"<model>","messages":[{"role":"user","content":"Explain DNS in two lines"}]}' | jq .usage
 
 # What your key has spent so far
-curl -s "https://litellm.resiz.es/key/info" -H "Authorization: Bearer $KEY" | jq '.info.spend'
+curl -s "https://inference.resizes.eu/key/info" -H "Authorization: Bearer $KEY" | jq '.info.spend'
 ```
 
 ## Check yourself

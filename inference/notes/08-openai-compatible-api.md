@@ -34,7 +34,7 @@ The answer is either text, or a **tool call**: the model asks the harness to run
 Ask for a tool call and look at the shape of the answer:
 
 ```bash
-curl -s https://litellm.resiz.es/v1/chat/completions -H "Authorization: Bearer $KEY" \
+curl -s https://inference.resizes.eu/v1/chat/completions -H "Authorization: Bearer $KEY" \
   -H "Content-Type: application/json" -d '{
   "model":"<model>",
   "messages":[{"role":"user","content":"What is the weather in Madrid?"}],

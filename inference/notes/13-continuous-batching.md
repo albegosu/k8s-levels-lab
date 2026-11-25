@@ -38,7 +38,7 @@ Send 10 requests at once and compare the total time with sending them one after 
 
 ```bash
 for i in $(seq 10); do
-  curl -s https://litellm.resiz.es/v1/chat/completions -H "Authorization: Bearer $KEY" \
+  curl -s https://inference.resizes.eu/v1/chat/completions -H "Authorization: Bearer $KEY" \
     -H "Content-Type: application/json" \
     -d '{"model":"<model>","messages":[{"role":"user","content":"Write 100 words about DNS"}]}' > /dev/null &
 done; time wait

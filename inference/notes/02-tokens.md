@@ -28,7 +28,7 @@ The vocabulary is built from training text: chunks that appear often become a si
 2. Ask the gateway and read the count the server actually used:
 
 ```bash
-curl -s https://litellm.resiz.es/v1/chat/completions -H "Authorization: Bearer $KEY" \
+curl -s https://inference.resizes.eu/v1/chat/completions -H "Authorization: Bearer $KEY" \
   -H "Content-Type: application/json" \
   -d '{"model":"<model>","max_tokens":1,"messages":[{"role":"user","content":"Despliega la API en producción"}]}' \
   | jq .usage
