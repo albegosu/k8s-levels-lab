@@ -30,7 +30,7 @@ vLLM does continuous batching by default. How big the batch gets depends on:
 - **`--max-num-seqs`:** the maximum number of requests per step.
 - **Preemption:** if the cache fills up, vLLM pauses some requests and recomputes them later. Frequent preemption means the GPU is overloaded.
 
-What to watch: `vllm:num_requests_running` (in the batch) against the requests waiting in the queue.
+What to watch: `vllm:num_requests_running` (in the batch) against `vllm:num_requests_waiting` (in the queue).
 
 ## Try it
 
@@ -43,6 +43,8 @@ for i in $(seq 10); do
     -d '{"model":"<model>","messages":[{"role":"user","content":"Write 100 words about DNS"}]}' > /dev/null &
 done; time wait
 ```
+
+On Ollama, how many requests run together is capped by `OLLAMA_NUM_PARALLEL`, so the gain is smaller than on vLLM.
 
 ## Check yourself
 

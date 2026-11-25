@@ -6,6 +6,16 @@ Un laboratorio práctico de Kubernetes, desde cero hasta operar una plataforma E
 
 El nivel 5 reproduce un incidente real: el rolling update de un DaemonSet se atasca porque el nodo está lleno de requests. Lo arreglas con cordon, drain y uncordon, y luego lo evitas con overprovisioning.
 
+## Elige tu camino
+
+| Si quieres… | Empieza por | Necesitas |
+| --- | --- | --- |
+| Aprender Kubernetes desde cero y operarlo como un equipo de plataforma | [Niveles 1–9](#niveles), en orden. Del 1 al 4 son los fundamentos; del 5 al 9, trabajo de plataforma | El clúster kind de abajo |
+| Preparar el examen CKAD | [Pista CKAD](ckad/README.es.md). Haz antes los niveles 1–4 si `kubectl` es nuevo para ti | El clúster kind de abajo |
+| Entender cómo se sirven los LLM (GPUs, KV cache, batching, gateways) | [Notas de inferencia](inference/README.es.md), en orden | Un navegador; un servidor de modelos local para los ejemplos con `curl` |
+
+Los tres caminos son independientes: puedes hacer las notas de inferencia sin el clúster, y la pista CKAD sin los niveles si ya dominas lo básico.
+
 ## Niveles
 
 Cada nivel tiene su `README.es.md`.

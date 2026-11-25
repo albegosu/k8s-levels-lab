@@ -1,55 +1,69 @@
 # Inference notes
 
-Short daily notes on serving LLMs, written while learning: one concept per note, five lines and a command or a diagram. They prepare [level 10](#level-10-plan), where the concepts run on the lab cluster.
+[Español](README.es.md)
+
+Short notes on serving LLMs: one concept per note, readable in about 15 minutes, each with something to try and three questions to check yourself. Read them in order: each builds on the ones before. You do not need the kind cluster for them.
 
 ## Path
 
-| Phase | Weeks | Concepts | Main source |
+| Phase | Notes | Concepts | Main source |
 | --- | --- | --- | --- |
-| 1 · What serving a model means | Nov 25 – Dec 4 | weights and parameters, tokens (prompt vs completion), prefill vs decode, VRAM and model size, quantization | [Fast & Efficient LLM Inference with vLLM](https://learn.deeplearning.ai/courses/fast-and-efficient-llm-inference-with-vllm) (DeepLearning.AI + Red Hat, 1 h 38 min) |
-| 2 · Why it is fast or slow | Dec 7 – Dec 18 | GPU instances on AWS (g5, g6, p5, inf2), KV cache, PagedAttention, continuous batching, prefix caching | Same course + [vLLM docs](https://docs.vllm.ai/) |
-| 3 · Running it as a platform | Dec 21 – Jan 29 | gateway (LiteLLM): virtual keys, budgets, rate limits, fallbacks; GPUs in Kubernetes (device plugin / GPU Operator, taints, GPU node pools); metrics (TTFT, inter-token latency, tokens/s, queue length, KV cache use); distributed serving (llm-d) | [LiteLLM proxy docs](https://docs.litellm.ai/docs/proxy/deploy), [llm-d](https://llm-d.ai/) |
+| 1 · What serving a model means | 01–08 | weights and parameters, tokens (prompt vs completion), prefill vs decode, VRAM and model size, quantization, context window, the OpenAI-compatible API | [Fast & Efficient LLM Inference with vLLM](https://learn.deeplearning.ai/courses/fast-and-efficient-llm-inference-with-vllm) (DeepLearning.AI + Red Hat, 1 h 38 min) |
+| 2 · Why it is fast or slow | 09–17 | what matters in a GPU, GPU instances on AWS, KV cache, PagedAttention, continuous batching, prefix caching, latency vs throughput, tensor parallelism, sizing | Same course + [vLLM docs](https://docs.vllm.ai/) |
+| 3 · Running it as a platform | coming | gateway (LiteLLM): virtual keys, budgets, rate limits, fallbacks; GPUs in Kubernetes (device plugin / GPU Operator, taints, GPU node pools); serving metrics; distributed serving (llm-d) | [LiteLLM proxy docs](https://docs.litellm.ai/docs/proxy/deploy), [llm-d](https://llm-d.ai/) |
 
 ## Notes
 
-| # | Note | Day |
-| --- | --- | --- |
-| 01 | [What serving a model means](notes/01-serving-a-model.md) | Nov 25 |
-| 02 | [Tokens](notes/02-tokens.md) | Nov 26 |
-| 03 | [Prompt vs completion tokens](notes/03-prompt-vs-completion.md) | Nov 27 |
-| 04 | [Prefill and decode](notes/04-prefill-and-decode.md) | Nov 30 |
-| 05 | [VRAM and model size](notes/05-vram-and-model-size.md) | Dec 1 |
-| 06 | [Quantization](notes/06-quantization.md) | Dec 2 |
-| 07 | [Context window](notes/07-context-window.md) | Dec 3 |
-| 08 | [The OpenAI-compatible API](notes/08-openai-compatible-api.md) | Dec 4 |
-| 09 | [What matters in a GPU](notes/09-what-matters-in-a-gpu.md) | Dec 7 |
-| 10 | [GPU instances on AWS](notes/10-gpu-instances-on-aws.md) | Dec 9 |
-| 11 | [KV cache](notes/11-kv-cache.md) | Dec 10 |
-| 12 | [PagedAttention](notes/12-pagedattention.md) | Dec 11 |
-| 13 | [Continuous batching](notes/13-continuous-batching.md) | Dec 14 |
-| 14 | [Prefix caching](notes/14-prefix-caching.md) | Dec 15 |
-| 15 | [Latency and throughput](notes/15-latency-and-throughput.md) | Dec 16 |
-| 16 | [Tensor parallelism](notes/16-tensor-parallelism.md) | Dec 17 |
-| 17 | [Sizing example: a 70B model](notes/17-sizing-example.md) | Dec 18 |
+| # | Note |
+| --- | --- |
+| 01 | [What serving a model means](notes/01-serving-a-model.md) |
+| 02 | [Tokens](notes/02-tokens.md) |
+| 03 | [Prompt vs completion tokens](notes/03-prompt-vs-completion.md) |
+| 04 | [Prefill and decode](notes/04-prefill-and-decode.md) |
+| 05 | [VRAM and model size](notes/05-vram-and-model-size.md) |
+| 06 | [Quantization](notes/06-quantization.md) |
+| 07 | [Context window](notes/07-context-window.md) |
+| 08 | [The OpenAI-compatible API](notes/08-openai-compatible-api.md) |
+| 09 | [What matters in a GPU](notes/09-what-matters-in-a-gpu.md) |
+| 10 | [GPU instances on AWS](notes/10-gpu-instances-on-aws.md) |
+| 11 | [KV cache](notes/11-kv-cache.md) |
+| 12 | [PagedAttention](notes/12-pagedattention.md) |
+| 13 | [Continuous batching](notes/13-continuous-batching.md) |
+| 14 | [Prefix caching](notes/14-prefix-caching.md) |
+| 15 | [Latency and throughput](notes/15-latency-and-throughput.md) |
+| 16 | [Tensor parallelism](notes/16-tensor-parallelism.md) |
+| 17 | [Sizing example: a 70B model](notes/17-sizing-example.md) |
+
+## Running the examples
+
+The `curl` examples use two variables, `BASE_URL` and `KEY`, so they work against any OpenAI-compatible server. The simplest one is [Ollama](https://ollama.com/) on your laptop, with a small model:
+
+```bash
+brew install ollama
+ollama serve &                      # listens on localhost:11434
+ollama pull qwen2.5:0.5b            # about 400 MB, runs on CPU
+export BASE_URL=http://localhost:11434 KEY=unused
+curl -s $BASE_URL/v1/models | jq '.data[].id'
+```
+
+Use `qwen2.5:0.5b` wherever a note says `<model>`. If you have access to a LiteLLM gateway, set `BASE_URL` to it and `KEY` to your virtual key instead. Two endpoints exist only on LiteLLM: `/key/info` (note 03) and `/v1/model/info` (note 07). Against Ollama, skip those lines.
 
 ## Note format
-
-One file per concept, `inference/notes/NN-slug.md`, readable in the 15-minute daily slot plus an optional 10–15 minutes of reading:
 
 | Section | What goes in it |
 | --- | --- |
 | **In one line** | The definition, in one sentence |
 | **The idea** | The concept in plain words, with a small diagram or table when it helps |
-| **Worked example** or **In the platform** | Real numbers, or where it shows up in LiteLLM, vLLM or the agent harnesses |
-| **Try it** | Something runnable: a `curl` against the gateway, a calculation, a page to inspect |
+| **Worked example** or **In the platform** | Real numbers, or where it shows up in LiteLLM, vLLM or agent harnesses (OpenCode, Codex…) |
+| **Try it** | Something runnable: a `curl` against the server, a calculation, a page to inspect |
 | **Check yourself** | Three questions, with the answers folded in `<details>` |
 | **Read more** | One or two sources, naming the exact sections to read and why |
 
-Every metric name, flag and source section is checked against the live docs when the note is written.
+Metric names, flags and source sections were checked against the live docs when each note was written.
 
-## Level 10 plan
+## Coming next: level 10
 
-Level 10 runs the whole path on kind, on CPU, with a small model. Same API and gateway as production, without the GPU.
+Level 10 will run the whole path on the kind cluster, on CPU, with a small model: same API and gateway as production, without the GPU.
 
 1. **Model server:** a small model (Qwen 0.5B class) behind an OpenAI-compatible API: llama.cpp server or Ollama on CPU. Same `/v1/chat/completions` contract as vLLM.
 2. **Gateway:** LiteLLM proxy with Postgres (virtual keys and budgets need it) and Redis (shared rate limits once there is more than one replica).

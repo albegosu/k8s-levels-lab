@@ -23,7 +23,7 @@ context window (e.g. 128k tokens)
 ## In the platform
 
 - The server can cap the window below what the model supports: `--max-model-len 32768` in vLLM. It is a capacity decision: shorter windows, more users per GPU.
-- Requests over the limit are rejected with an error, not silently cut.
+- In vLLM, requests over the limit are rejected with an error, not silently cut. Not every server does this: Ollama truncates the prompt to its context size (`num_ctx`) without failing, so the model silently loses the start of the conversation.
 - Harnesses **compact** when they approach the limit: they drop or summarise older messages. Quality usually drops before the hard limit, which is why agents "forget" instructions in long sessions.
 
 ## Try it
