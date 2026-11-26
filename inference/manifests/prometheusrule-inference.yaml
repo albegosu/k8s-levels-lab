@@ -1,0 +1,114 @@
+# Alerts for an LLM serving stack: LiteLLM gateway + vLLM + NVIDIA DCGM exporter.
+# Explained in inference/notes/23-what-to-alert-on.md.
+#
+# Before applying: curl each /metrics endpoint and check the names. They change
+# between vLLM and DCGM exporter versions. Thresholds are starting points for a
+# coding-agent platform (TTFT p95 < 3 s, ITL p95 < 50 ms): set your own SLOs.
+#
+# DCGM names below follow the current dcgm-exporter default-counters.csv
+# (DCGM_FI_DEV_XID_ERROR, DCGM_FI_DEV_GPU_TEMP_CELSIUS, DCGM_FI_DEV_ROW_REMAP_FAILED).
+# Older exporters use DCGM_FI_DEV_XID_ERRORS and DCGM_FI_DEV_GPU_TEMP instead.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: inference
+  namespace: observability
+  labels:
+    release: kube-prometheus-stack
+spec:
+  groups:
+    # Page: users are affected now.
+    - name: inference.symptoms
+      rules:
+        - alert: InferenceTTFTHigh
+          expr: |
+            histogram_quantile(0.95, sum by (le, model_name) (rate(vllm:time_to_first_token_seconds_bucket[5m]))) > 3
+          for: 10m
+          labels: { severity: page }
+          annotations:
+            summary: "{{ $labels.model_name }}: TTFT p95 above 3 s for 10 minutes"
+            runbook: "Check vllm:num_requests_waiting and vllm:kv_cache_usage_perc: out of capacity, or very long prompts? Note 22, 'Reading it in an incident'."
+        - alert: InferenceITLHigh
+          expr: |
+            histogram_quantile(0.95, sum by (le, model_name) (rate(vllm:inter_token_latency_seconds_bucket[5m]))) > 0.05
+          for: 10m
+          labels: { severity: page }
+          annotations:
+            summary: "{{ $labels.model_name }}: inter-token latency p95 above 50 ms"
+            runbook: "Batch too large for the target (speed ceiling, note 20): lower --max-num-seqs or add replicas."
+        - alert: InferenceGatewayErrors
+          expr: |
+            sum by (requested_model) (rate(litellm_proxy_failed_requests_metric_total{exception_status=~"5.."}[5m]))
+              / sum by (requested_model) (rate(litellm_proxy_total_requests_metric_total[5m])) > 0.05
+          for: 5m
+          labels: { severity: page }
+          annotations:
+            summary: "{{ $labels.requested_model }}: more than 5 % of gateway requests fail with 5xx"
+            runbook: "5xx is a backend problem: check litellm_deployment_state. 429 (rate limit) and 422 (budget) are tenant problems and are excluded here."
+        - alert: InferenceBackendDown
+          expr: max by (litellm_model_name, api_base) (litellm_deployment_state) == 2
+          for: 2m
+          labels: { severity: page }
+          annotations:
+            summary: "Gateway marks {{ $labels.litellm_model_name }} at {{ $labels.api_base }} as down"
+            runbook: "Pods of the model server: restarts, OOMKilled, Pending for nvidia.com/gpu, XID errors on the node."
+
+    # Ticket: no user impact yet, but capacity is running out.
+    - name: inference.saturation
+      rules:
+        - alert: InferenceRequestsQueued
+          expr: max by (model_name) (vllm:num_requests_waiting) > 0
+          for: 15m
+          labels: { severity: ticket }
+          annotations:
+            summary: "{{ $labels.model_name }}: requests waiting for 15 minutes"
+            runbook: "Memory ceiling reached. Scale out (note 24), enable --kv-cache-dtype fp8 or lower --max-model-len."
+        - alert: InferenceKVCacheFull
+          expr: max by (model_name) (avg_over_time(vllm:kv_cache_usage_perc[15m])) > 0.9
+          for: 30m
+          labels: { severity: ticket }
+          annotations:
+            summary: "{{ $labels.model_name }}: KV cache above 90 % for 30 minutes"
+        - alert: InferencePreempting
+          expr: sum by (model_name) (rate(vllm:num_preemptions_total[10m])) > 0.1
+          for: 15m
+          labels: { severity: ticket }
+          annotations:
+            summary: "{{ $labels.model_name }}: vLLM is preempting requests (recomputing their cache)"
+        - alert: InferenceBudgetAlmostSpent
+          expr: litellm_remaining_team_budget_metric < 10 and litellm_remaining_team_budget_metric > 0
+          for: 1h
+          labels: { severity: ticket }
+          annotations:
+            summary: "Team {{ $labels.team_alias }} has less than 10 units of budget left"
+
+    # Hardware: route to the platform team; the fix is the node, not the model.
+    - name: inference.gpu
+      rules:
+        - alert: GPUXidError
+          # Fatal XIDs: 48 (double-bit ECC), 79 (fallen off the bus), 94/95 (contained/uncontained ECC).
+          expr: max by (Hostname, gpu) (DCGM_FI_DEV_XID_ERROR) == 48 or max by (Hostname, gpu) (DCGM_FI_DEV_XID_ERROR) == 79 or max by (Hostname, gpu) (DCGM_FI_DEV_XID_ERROR) == 94 or max by (Hostname, gpu) (DCGM_FI_DEV_XID_ERROR) == 95
+          labels: { severity: page }
+          annotations:
+            summary: "GPU {{ $labels.gpu }} on {{ $labels.Hostname }} reported XID {{ $value }}"
+            runbook: "Cordon and drain the node, then replace it (Karpenter will provision a new one). Do not just restart the pod."
+        - alert: GPURowRemapFailed
+          expr: max by (Hostname, gpu) (DCGM_FI_DEV_ROW_REMAP_FAILED) > 0
+          labels: { severity: ticket }
+          annotations:
+            summary: "GPU {{ $labels.gpu }} on {{ $labels.Hostname }} could not remap a memory row: replace the node"
+        - alert: GPUHot
+          expr: max by (Hostname, gpu) (DCGM_FI_DEV_GPU_TEMP_CELSIUS) > 85
+          for: 10m
+          labels: { severity: ticket }
+          annotations:
+            summary: "GPU {{ $labels.gpu }} on {{ $labels.Hostname }} above 85 °C: it will throttle"
+        - alert: GPUPodPending
+          expr: |
+            sum by (namespace, pod) (kube_pod_status_phase{phase="Pending"} == 1)
+              * on (namespace, pod) group_left sum by (namespace, pod) (kube_pod_container_resource_requests{resource="nvidia_com_gpu"} > 0)
+          for: 15m
+          labels: { severity: ticket }
+          annotations:
+            summary: "{{ $labels.namespace }}/{{ $labels.pod }} has waited 15 minutes for a GPU"
+            runbook: "No GPU capacity: instance quota, regional capacity, NodePool limits, or a taint without a toleration."

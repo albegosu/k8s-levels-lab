@@ -4,13 +4,31 @@
 
 Short notes on serving LLMs: one concept per note, readable in about 15 minutes, each with something to try and three questions to check yourself. Read them in order: each builds on the ones before. You do not need the kind cluster for them.
 
+## What this path is for
+
+Not a list of answers. Inference customers will bring questions and problems nobody has written down yet. The path builds the three abilities you need for them:
+
+1. **Understand** how a model is served, down to memory, bandwidth, compute and queues (phases 1 and 2).
+2. **Reason** from a few equations to an answer you have never seen, and know which questions to ask first (phase 3, starting with [note 18](notes/18-first-principles.md)).
+3. **Practise** estimating, diagnosing and explaining, on paper and blind, before a customer is waiting ([practice](practice/README.md)).
+
+Phase 3 covers what operators get asked: does model X fit on an H100 or a B300, how much concurrency, how it changes with the model and the GPU, what to watch, what to alert on, how to scale. But each note shows the reasoning, so the same method works for the next model and the next GPU.
+
+Tools: [`fit.py`](tools/fit.py), a calculator for fit and concurrency, and a [`PrometheusRule`](manifests/prometheusrule-inference.yaml) with the alerts of note 23.
+
+```bash
+python3 inference/tools/fit.py --model qwen3-235b-a22b            # fit and concurrency on every GPU
+python3 inference/tools/fit.py --model llama-3.1-70b --gpu b300   # one GPU in detail
+```
+
 ## Path
 
 | Phase | Notes | Concepts | Main source |
 | --- | --- | --- | --- |
 | 1 · What serving a model means | 01–08 | weights and parameters, tokens (prompt vs completion), prefill vs decode, VRAM and model size, quantization, context window, the OpenAI-compatible API | [Fast & Efficient LLM Inference with vLLM](https://learn.deeplearning.ai/courses/fast-and-efficient-llm-inference-with-vllm) (DeepLearning.AI + Red Hat, 1 h 38 min) |
 | 2 · Why it is fast or slow | 09–17 | what matters in a GPU, GPU instances on AWS, KV cache, PagedAttention, continuous batching, prefix caching, latency vs throughput, tensor parallelism, sizing | Same course + [vLLM docs](https://docs.vllm.ai/) |
-| 3 · Running it as a platform | coming | gateway (LiteLLM): virtual keys, budgets, rate limits, fallbacks; GPUs in Kubernetes (device plugin / GPU Operator, taints, GPU node pools); serving metrics; distributed serving (llm-d) | [LiteLLM proxy docs](https://docs.litellm.ai/docs/proxy/deploy), [llm-d](https://llm-d.ai/) |
+| 3 · Reasoning and operating | 18–27 + [practice](practice/README.md) | the six equations behind every answer, does it fit on which GPU, concurrency and its two ceilings, how model and GPU change it, benchmarking, the four layers of metrics, what to alert on, scaling and cold starts, a troubleshooting method, asking customers the right questions, a full sizing journey; 12 blind cases and 16 estimation drills | [vLLM docs](https://docs.vllm.ai/), [vLLM metrics](https://docs.vllm.ai/en/latest/usage/metrics.html), [LiteLLM Prometheus](https://docs.litellm.ai/docs/proxy/prometheus), [DCGM exporter](https://docs.nvidia.com/datacenter/cloud-native/gpu-telemetry/latest/dcgm-exporter.html) |
+| 4 · The gateway and beyond | coming | LiteLLM in depth (virtual keys, budgets, rate limits, fallbacks, routing), disaggregated and distributed serving (llm-d, prefill/decode split, wide expert parallelism), model quality and evals after quantization | [LiteLLM proxy docs](https://docs.litellm.ai/docs/proxy/deploy), [llm-d](https://llm-d.ai/) |
 
 ## Notes
 
@@ -33,6 +51,17 @@ Short notes on serving LLMs: one concept per note, readable in about 15 minutes,
 | 15 | [Latency and throughput](notes/15-latency-and-throughput.md) |
 | 16 | [Tensor parallelism](notes/16-tensor-parallelism.md) |
 | 17 | [Sizing example: a 70B model](notes/17-sizing-example.md) |
+| 18 | [First principles: six equations behind every answer](notes/18-first-principles.md) |
+| 19 | [Does model X fit on GPU Y?](notes/19-does-it-fit.md) |
+| 20 | [How many users can it serve?](notes/20-how-many-users.md) |
+| 21 | [Measure it: the concurrency sweep](notes/21-benchmark.md) |
+| 22 | [Visibility: what to look at](notes/22-visibility.md) |
+| 23 | [What to alert on](notes/23-what-to-alert-on.md) |
+| 24 | [Scaling and capacity on Kubernetes](notes/24-scaling.md) |
+| 25 | [A method for "it is slow" and "it fails"](notes/25-troubleshooting-method.md) |
+| 26 | [Asking the right questions, and answering them](notes/26-asking-the-right-questions.md) |
+| 27 | [Journey: 200 developers, H100, H200 or B300?](notes/27-journey-h100-or-b300.md) |
+| — | [Practice: drills and blind cases](practice/README.md) |
 
 ## Running the examples
 
@@ -61,15 +90,6 @@ Use `qwen2.5:0.5b` wherever a note says `<model>`. If you have access to a LiteL
 
 Metric names, flags and source sections were checked against the live docs when each note was written.
 
-## Coming next: level 10
+## Hands-on: level 10
 
-Level 10 will run the whole path on the kind cluster, on CPU, with a small model: same API and gateway as production, without the GPU.
-
-1. **Model server:** a small model (Qwen 0.5B class) behind an OpenAI-compatible API: llama.cpp server or Ollama on CPU. Same `/v1/chat/completions` contract as vLLM.
-2. **Gateway:** LiteLLM proxy with Postgres (virtual keys and budgets need it) and Redis (shared rate limits once there is more than one replica).
-3. **Tenants:** two virtual keys, one with a tiny budget and a low RPM limit. Prove the limit and the budget block requests.
-4. **Fallback:** a second model route; kill the first server and see LiteLLM fail over.
-5. **Metrics:** scrape the gateway and the model server into the level 8 Prometheus; Grafana panel with latency, tokens/s and spend per key.
-6. **Faults to find blind (like level 9):** budget exhausted, model server OOMKilled, wrong model name in the route, Postgres down.
-
-What kind cannot teach here: GPU scheduling, the device plugin, MIG and real throughput. Those stay as notes in phase 3.
+[Level 10](../level-10/README.md) runs the whole path on the kind cluster, on CPU, with a small model: a llama.cpp model server with the same `/v1/chat/completions` contract as vLLM, a LiteLLM gateway with Postgres, two tenants with rate limits and budgets, a fallback, Prometheus metrics, a Grafana dashboard, alerts, and five faults to diagnose blind with note 25. What kind cannot teach (GPUs, real throughput, tensor parallelism) stays in notes 19–24.

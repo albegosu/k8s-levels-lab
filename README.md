@@ -2,7 +2,7 @@
 
 [Español](README.es.md)
 
-A hands-on Kubernetes lab, from zero to running a production-style EKS platform, in nine levels. Everything runs locally on [kind](https://kind.sigs.k8s.io/). The manifests copy the patterns of a real platform: GitOps with Argo CD, Gateway API with Envoy, External Secrets, Karpenter-style node pools and kube-prometheus-stack.
+A hands-on Kubernetes lab, from zero to running a production-style EKS platform, in ten levels. Everything runs locally on [kind](https://kind.sigs.k8s.io/). The manifests copy the patterns of a real platform: GitOps with Argo CD, Gateway API with Envoy, External Secrets, Karpenter-style node pools and kube-prometheus-stack.
 
 Level 5 reproduces a real incident: a DaemonSet rollout gets stuck because the node is full of resource requests, and you fix it with cordon, drain and uncordon, then prevent it with overprovisioning.
 
@@ -10,9 +10,9 @@ Level 5 reproduces a real incident: a DaemonSet rollout gets stuck because the n
 
 | If you want to… | Start here | Needs |
 | --- | --- | --- |
-| Learn Kubernetes from zero and run it like a platform team | [Levels 1–9](#levels), in order. 1–4 are the basics, 5–9 are platform work | The kind cluster below |
+| Learn Kubernetes from zero and run it like a platform team | [Levels 1–10](#levels), in order. 1–4 are the basics, 5–9 are platform work, 10 is an LLM inference platform | The kind cluster below |
 | Prepare the CKAD exam | [CKAD track](ckad/README.md). Do levels 1–4 first if `kubectl` is new to you | The kind cluster below |
-| Understand how LLMs are served (GPUs, KV cache, batching, gateways) | [Inference notes](inference/README.md), in order | A browser; a local model server for the `curl` examples |
+| Understand how LLMs are served and operated: which GPU a model needs, how many users it takes, what to watch and alert on | [Inference notes](inference/README.md), in order | A browser and Python 3; a local model server for the `curl` examples |
 
 The three paths are independent: you can do the inference notes without the cluster, and the CKAD track without the levels if you already know the basics.
 
@@ -29,6 +29,7 @@ The three paths are independent: you can do the inference notes without the clus
 | [7](level-7/README.md) | Storage and cloud | PVCs, zonal volumes, what lives outside the cluster |
 | [8](level-8/README.md) | Observability | Prometheus, Grafana, ServiceMonitor, alerts |
 | [9](level-9/README.md) | Operations | A diagnosis method and five faults to find blind |
+| [10](level-10/README.md) | Inference platform | A model server on CPU, a LiteLLM gateway with tenants, budgets and fallback, metrics, and five inference faults |
 
 ## Preparing for the CKAD
 

@@ -62,9 +62,9 @@ case "${1:-}" in
     echo "Optional: ./lab.sh addon headlamp (UI), ./lab.sh addon argocd (level 6), ./lab.sh addon monitoring (level 8)" ;;
   addon) repos; addon "${2:?addon name}" ;;
   check)
-    lvl=${2:?"level: 1-9 or all"}
+    lvl=${2:?"level: 1-10 or all"}
     if [[ $lvl == all ]]; then
-      rc=0; for i in 1 2 3 4 5 6 7 8 9; do bash "level-$i/check.sh" || rc=1; done; exit $rc
+      rc=0; for i in 1 2 3 4 5 6 7 8 9 10; do bash "level-$i/check.sh" || rc=1; done; exit $rc
     fi
     [[ -f "level-$lvl/check.sh" ]] || { echo "No check for level $lvl"; exit 1; }
     bash "level-$lvl/check.sh" ;;
@@ -84,12 +84,12 @@ case "${1:-}" in
     echo "When done: ./lab.sh drill $n check" ;;
   progress)
     done_n=0; G=; N=; [[ -t 1 ]] && G=$'\e[32m' N=$'\e[0m'
-    for i in 1 2 3 4 5 6 7 8 9; do
+    for i in 1 2 3 4 5 6 7 8 9 10; do
       d=$(awk -v l="$i" '$1 == l { print $2 }' .progress 2>/dev/null)
       if [[ -n $d ]]; then printf '  %s✔%s level %s  %s\n' "$G" "$N" "$i" "$d"; done_n=$((done_n + 1)); else printf '  · level %s\n' "$i"; fi
     done
-    bar=$(printf '%*s' "$done_n" '' | tr ' ' '#')$(printf '%*s' $((9 - done_n)) '' | tr ' ' '.')
-    printf '\n  [%s] %s/9\n' "$bar" "$done_n"
+    bar=$(printf '%*s' "$done_n" '' | tr ' ' '#')$(printf '%*s' $((10 - done_n)) '' | tr ' ' '.')
+    printf '\n  [%s] %s/10\n' "$bar" "$done_n"
     if [[ ${2:-} == --open ]]; then
       lang=${LAB_LANG:-$([[ "${LANG:-}" == es* ]] && echo es || echo en)}
       python3 - "$lang" <<'PY'
