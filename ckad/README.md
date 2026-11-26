@@ -40,6 +40,38 @@ The exam gives you 2 hours for roughly 15–20 tasks, about 6–8 minutes each. 
 | <a id="drill-11"></a>11 | CRD | 6 min | `ckad/crd/backup-crd.yaml` does not apply. Fix it, then create Backup `nightly` with `schedule: "0 2 * * *"` |
 | <a id="drill-12"></a>12 | Build an image | 8 min | Build `ckad/image` as `ckad/hello:v1`, load it into kind, run Pod `hello` with `imagePullPolicy: Never` and env `GREETING` from ConfigMap `greeting` |
 
+## Find it in the docs, do not memorise it
+
+The exam is open book, within limits: in the exam browser you may use **[kubernetes.io/docs](https://kubernetes.io/docs/)**, the **[Kubernetes blog](https://kubernetes.io/blog/)** and **[helm.sh/docs](https://helm.sh/docs/)** ([Linux Foundation: resources allowed](https://docs.linuxfoundation.org/tc-docs/certification/certification-resources-allowed)). Nobody remembers every field of a CronJob or a NetworkPolicy. What passes the exam is knowing **which page has the example to copy**, and the two offline sources that are faster than any page:
+
+1. **`kubectl <verb> <kind> -h`**: the examples at the top of the help are ready to adapt. `k create ingress -h`, `k create cronjob -h` and `k create role -h` write most of drills 1, 5 and 9 for you.
+2. **`kubectl explain <kind>.<field>`**: the exact field names and nesting, without leaving the terminal.
+
+Example: run a pod with a command. Nobody types this from memory; `k run -h` shows it:
+
+```bash
+k run probe --image=busybox --restart=Never --command -- sh -c 'wget -qO- web:80; sleep 3600'
+```
+
+Train with the docs as you will use them: for each drill, find the page **before** you start the clock, then do the drill with only that page and `-h` open. The [kubectl quick reference](https://kubernetes.io/docs/reference/kubectl/quick-reference/) is the page to know best.
+
+| # | Drill | Page to find | What to copy from it | Faster offline |
+| --- | --- | --- | --- | --- |
+| 1 | CronJob | [CronJob](https://kubernetes.io/docs/concepts/workloads/controllers/cron-jobs/) | `concurrencyPolicy`, `successfulJobsHistoryLimit`; `activeDeadlineSeconds` is in the Job spec | `k create cronjob -h` |
+| 2 | Init + sidecar | [Sidecar containers](https://kubernetes.io/docs/concepts/workloads/pods/sidecar-containers/), [Init containers](https://kubernetes.io/docs/concepts/workloads/pods/init-containers/) | The sidecar example YAML: an init container with `restartPolicy: Always` | — |
+| 3 | SecurityContext | [Configure a Security Context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/) | `runAsNonRoot`, `readOnlyRootFilesystem`, `capabilities: drop` | `k explain pod.spec.containers.securityContext` |
+| 4 | Quota + LimitRange | [Resource Quotas](https://kubernetes.io/docs/concepts/policy/resource-quotas/), [Limit Ranges](https://kubernetes.io/docs/concepts/policy/limit-range/) | `limits.cpu`, `defaultRequest`, `default` | `k create quota -h` |
+| 5 | Ingress | [Ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/) | The minimal Ingress example; `pathType: Prefix` | `k create ingress -h` (the examples cover both rules) |
+| 6 | Kustomize | [Managing objects with Kustomize](https://kubernetes.io/docs/tasks/manage-kubernetes-objects/kustomization/) | `replicas`, `labels`, `images` fields of `kustomization.yaml` | `k kustomize <dir>` to preview |
+| 7 | Helm | [helm.sh/docs](https://helm.sh/docs/helm/helm_upgrade/): `helm upgrade` | `--set`, `--reuse-values`, `-f values.yaml` | `helm upgrade -h`, `helm show values` |
+| 8 | Canary | [Managing workloads → Canary deployments](https://kubernetes.io/docs/concepts/workloads/management/#canary-deployments) | Two Deployments, one Service selecting a shared label | `k scale -h` |
+| 9 | RBAC | [Using RBAC Authorization](https://kubernetes.io/docs/reference/access-authn-authz/rbac/), [Configure Service Accounts](https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/) | `automountServiceAccountToken: false` | `k create role -h`, `k create rolebinding -h`, `k auth can-i --as` |
+| 10 | Fix a broken app | [Debug Running Pods](https://kubernetes.io/docs/tasks/debug/debug-application/debug-running-pod/), [Probes](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) | `readinessProbe.httpGet` | `k describe`, `k get events --sort-by=.lastTimestamp`, `k logs --previous` |
+| 11 | CRD | [Extend the API with CustomResourceDefinitions](https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/) | The full CRD example: `versions`, `served`, `storage`, `schema.openAPIV3Schema` | `k explain crd.spec` |
+| 12 | Build an image | [Images → imagePullPolicy](https://kubernetes.io/docs/concepts/containers/images/), [Configure a Pod to use a ConfigMap](https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/) | `valueFrom.configMapKeyRef` | `k create configmap -h`, `k set env -h` |
+
+The drills and levels 1–4 are plain Kubernetes. Levels 5–9 teach how a production platform runs (Karpenter, Argo CD, External Secrets, Gateway API): useful at work, **not on the exam**.
+
 ## Exam setup to practise with
 
 ```bash

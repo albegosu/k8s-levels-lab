@@ -2,7 +2,7 @@
 
 [English](README.md)
 
-Un laboratorio práctico de Kubernetes, desde cero hasta operar una plataforma EKS de producción, en nueve niveles. Todo corre en local con [kind](https://kind.sigs.k8s.io/). Los manifiestos copian los patrones de una plataforma real: GitOps con Argo CD, Gateway API con Envoy, External Secrets, node pools al estilo Karpenter y kube-prometheus-stack.
+Un laboratorio práctico de Kubernetes, desde cero hasta operar una plataforma EKS de producción, en diez niveles. Todo corre en local con [kind](https://kind.sigs.k8s.io/). Los manifiestos copian los patrones de una plataforma real: GitOps con Argo CD, Gateway API con Envoy, External Secrets, node pools al estilo Karpenter y kube-prometheus-stack.
 
 El nivel 5 reproduce un incidente real: el rolling update de un DaemonSet se atasca porque el nodo está lleno de requests. Lo arreglas con cordon, drain y uncordon, y luego lo evitas con overprovisioning.
 
@@ -10,9 +10,9 @@ El nivel 5 reproduce un incidente real: el rolling update de un DaemonSet se ata
 
 | Si quieres… | Empieza por | Necesitas |
 | --- | --- | --- |
-| Aprender Kubernetes desde cero y operarlo como un equipo de plataforma | [Niveles 1–9](#niveles), en orden. Del 1 al 4 son los fundamentos; del 5 al 9, trabajo de plataforma | El clúster kind de abajo |
+| Aprender Kubernetes desde cero y operarlo como un equipo de plataforma | [Niveles 1–10](#niveles), en orden. Del 1 al 4 son los fundamentos; del 5 al 9, trabajo de plataforma; el 10, una plataforma de inferencia de LLM | El clúster kind de abajo |
 | Preparar el examen CKAD | [Pista CKAD](ckad/README.es.md). Haz antes los niveles 1–4 si `kubectl` es nuevo para ti | El clúster kind de abajo |
-| Entender cómo se sirven los LLM (GPUs, KV cache, batching, gateways) | [Notas de inferencia](inference/README.es.md), en orden | Un navegador; un servidor de modelos local para los ejemplos con `curl` |
+| Entender cómo se sirven y se operan los LLM: qué GPU necesita un modelo, cuántos usuarios aguanta, qué vigilar y sobre qué alertar | [Notas de inferencia](inference/README.es.md), en orden | Un navegador y Python 3; un servidor de modelos local para los ejemplos con `curl` |
 
 Los tres caminos son independientes: puedes hacer las notas de inferencia sin el clúster, y la pista CKAD sin los niveles si ya dominas lo básico.
 
@@ -31,6 +31,7 @@ Cada nivel tiene su `README.es.md`.
 | [7](level-7/README.es.md) | Almacenamiento y nube | PVC, volúmenes por zona, lo que vive fuera del clúster |
 | [8](level-8/README.es.md) | Observabilidad | Prometheus, Grafana, ServiceMonitor, alertas |
 | [9](level-9/README.es.md) | Operación | Un método de diagnóstico y cinco averías para encontrar a ciegas |
+| [10](level-10/README.es.md) | Plataforma de inferencia | Un servidor de modelos en CPU, un gateway LiteLLM con tenants, presupuestos y fallback, métricas y cinco averías de inferencia |
 
 ## Preparar el CKAD
 

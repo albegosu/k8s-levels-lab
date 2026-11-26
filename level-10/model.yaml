@@ -1,0 +1,108 @@
+# Two model servers: llama.cpp on CPU with a small model behind an OpenAI-compatible API.
+# Same /v1/chat/completions contract as vLLM. Explained in level-10/README.md.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: inference
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: qwen, namespace: inference, labels: { app: qwen } }
+spec:
+  replicas: 1
+  # On a GPU node there is no room for a second copy of the model during a rollout:
+  # the old pod goes first. With one replica, every rollout is a short outage.
+  strategy: { type: RollingUpdate, rollingUpdate: { maxSurge: 0, maxUnavailable: 1 } }
+  selector: { matchLabels: { app: qwen } }
+  template:
+    metadata: { labels: { app: qwen, role: model-server } }
+    spec:
+      nodeSelector: { karpenter.sh/nodepool: default }
+      containers:
+        - name: llama
+          image: ghcr.io/ggml-org/llama.cpp:server-b12767
+          args:
+            - -hf
+            - Qwen/Qwen2.5-0.5B-Instruct-GGUF:Q4_K_M   # ~400 MB, downloaded at start-up
+            - --alias
+            - qwen2.5-0.5b
+            - --ctx-size
+            - "4096"          # KV cache for 4,096 tokens in total…
+            - --parallel
+            - "4"             # …split into 4 slots: 4 requests at once, 1,024 tokens each
+            - --cache-ram
+            - "0"             # no extra prompt cache in RAM: keeps memory predictable
+            - --metrics
+            - --host
+            - 0.0.0.0
+            - --port
+            - "8080"
+          env:
+            - { name: LLAMA_CACHE, value: /models }
+          ports: [{ name: http, containerPort: 8080 }]
+          volumeMounts: [{ name: models, mountPath: /models }]
+          readinessProbe:
+            httpGet: { path: /health, port: http }
+            periodSeconds: 5
+          startupProbe:
+            httpGet: { path: /health, port: http }
+            periodSeconds: 5
+            failureThreshold: 60      # up to 5 min to download and load the model
+          resources:
+            requests: { cpu: 500m, memory: 512Mi }
+            limits: { memory: 1Gi }
+      volumes:
+        - name: models
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata: { name: qwen, namespace: inference, labels: { app: qwen, role: model-server } }
+spec:
+  selector: { app: qwen }
+  ports: [{ name: http, port: 8080, targetPort: http }]
+---
+# A second, smaller server: the fallback target. One slot only.
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: qwen-backup, namespace: inference, labels: { app: qwen-backup } }
+spec:
+  replicas: 1
+  # On a GPU node there is no room for a second copy of the model during a rollout:
+  # the old pod goes first. With one replica, every rollout is a short outage.
+  strategy: { type: RollingUpdate, rollingUpdate: { maxSurge: 0, maxUnavailable: 1 } }
+  selector: { matchLabels: { app: qwen-backup } }
+  template:
+    metadata: { labels: { app: qwen-backup, role: model-server } }
+    spec:
+      nodeSelector: { karpenter.sh/nodepool: default }
+      containers:
+        - name: llama
+          image: ghcr.io/ggml-org/llama.cpp:server-b12767
+          args: [-hf, "Qwen/Qwen2.5-0.5B-Instruct-GGUF:Q4_K_M", --alias, qwen2.5-0.5b,
+                 --ctx-size, "2048", --parallel, "1", --cache-ram, "0", --metrics,
+                 --host, 0.0.0.0, --port, "8080"]
+          env:
+            - { name: LLAMA_CACHE, value: /models }
+          ports: [{ name: http, containerPort: 8080 }]
+          volumeMounts: [{ name: models, mountPath: /models }]
+          readinessProbe:
+            httpGet: { path: /health, port: http }
+            periodSeconds: 5
+          startupProbe:
+            httpGet: { path: /health, port: http }
+            periodSeconds: 5
+            failureThreshold: 60
+          resources:
+            requests: { cpu: 250m, memory: 384Mi }
+            limits: { memory: 1Gi }
+      volumes:
+        - name: models
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata: { name: qwen-backup, namespace: inference, labels: { app: qwen-backup, role: model-server } }
+spec:
+  selector: { app: qwen-backup }
+  ports: [{ name: http, port: 8080, targetPort: http }]

@@ -1,0 +1,43 @@
+# Postgres for LiteLLM: virtual keys, teams, budgets and spend live here.
+# Its password is in the Secret postgres, created by level-10/secrets.sh with a random value:
+# credentials never go into Git. On a platform it would come from External Secrets (level 4).
+apiVersion: apps/v1
+kind: StatefulSet
+metadata: { name: postgres, namespace: inference }
+spec:
+  serviceName: postgres
+  replicas: 1
+  selector: { matchLabels: { app: postgres } }
+  template:
+    metadata: { labels: { app: postgres } }
+    spec:
+      nodeSelector: { role: system }
+      containers:
+        - name: postgres
+          image: postgres:17-alpine
+          env:
+            - { name: POSTGRES_USER, value: litellm }
+            - { name: POSTGRES_DB, value: litellm }
+            - name: POSTGRES_PASSWORD
+              valueFrom: { secretKeyRef: { name: postgres, key: password } }
+            - { name: PGDATA, value: /var/lib/postgresql/data/pgdata }
+          ports: [{ name: pg, containerPort: 5432 }]
+          readinessProbe:
+            exec: { command: [pg_isready, -U, litellm] }
+            periodSeconds: 5
+          resources:
+            requests: { cpu: 50m, memory: 128Mi }
+            limits: { memory: 256Mi }
+          volumeMounts: [{ name: data, mountPath: /var/lib/postgresql/data }]
+  volumeClaimTemplates:
+    - metadata: { name: data }
+      spec:
+        accessModes: [ReadWriteOnce]
+        resources: { requests: { storage: 1Gi } }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: postgres, namespace: inference }
+spec:
+  selector: { app: postgres }
+  ports: [{ name: pg, port: 5432, targetPort: pg }]

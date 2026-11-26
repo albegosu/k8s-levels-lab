@@ -42,19 +42,19 @@ code{font-family:var(--mono);font-size:12px;background:#0e1012;border:1px solid 
 const PROGRESS = /*PROGRESS*/{};
 const LANG = /*LANG*/'en';
 const L = {
-  en: { title: 'Lab progress', sub: n => `${n} of 9 levels passed. The steps rise with the difficulty; green ones are done, blue is next.`, next: 'Next', done: 'Passed', run: 'Check it with',
-    levels: [['Fundamentals','Pods, namespaces, kubectl, events'],['Workloads','Deployment, StatefulSet, DaemonSet, Job, probes'],['Networking','Service, DNS, Gateway API, NetworkPolicy'],['Config and identity','Secrets, External Secrets, RBAC'],['Scheduling and nodes','Requests, Pending, drain, PDB, priority'],['Helm and GitOps','Charts, Argo CD, CI-style bump'],['Storage and cloud','PVCs, zonal volumes, Terraform'],['Observability','Prometheus, Grafana, alerts'],['Operations','Diagnosis method, five faults']] },
-  es: { title: 'Progreso del lab', sub: n => `${n} de 9 niveles superados. Los escalones suben con la dificultad; en verde los hechos, en azul el siguiente.`, next: 'Siguiente', done: 'Superado', run: 'Corrígelo con',
-    levels: [['Fundamentos','Pods, namespaces, kubectl, eventos'],['Workloads','Deployment, StatefulSet, DaemonSet, Job, probes'],['Red','Service, DNS, Gateway API, NetworkPolicy'],['Configuración e identidad','Secrets, External Secrets, RBAC'],['Scheduling y nodos','Requests, Pending, drain, PDB, prioridad'],['Helm y GitOps','Charts, Argo CD, bump como la CI'],['Almacenamiento y nube','PVC, volúmenes por zona, Terraform'],['Observabilidad','Prometheus, Grafana, alertas'],['Operación','Método de diagnóstico, cinco averías']] }
+  en: { title: 'Lab progress', sub: n => `${n} of 10 levels passed. The steps rise with the difficulty; green ones are done, blue is next.`, next: 'Next', done: 'Passed', run: 'Check it with',
+    levels: [['Fundamentals','Pods, namespaces, kubectl, events'],['Workloads','Deployment, StatefulSet, DaemonSet, Job, probes'],['Networking','Service, DNS, Gateway API, NetworkPolicy'],['Config and identity','Secrets, External Secrets, RBAC'],['Scheduling and nodes','Requests, Pending, drain, PDB, priority'],['Helm and GitOps','Charts, Argo CD, CI-style bump'],['Storage and cloud','PVCs, zonal volumes, Terraform'],['Observability','Prometheus, Grafana, alerts'],['Operations','Diagnosis method, five faults'],['Inference platform','Model server, LiteLLM, tenants, fallback, faults']] },
+  es: { title: 'Progreso del lab', sub: n => `${n} de 10 niveles superados. Los escalones suben con la dificultad; en verde los hechos, en azul el siguiente.`, next: 'Siguiente', done: 'Superado', run: 'Corrígelo con',
+    levels: [['Fundamentos','Pods, namespaces, kubectl, eventos'],['Workloads','Deployment, StatefulSet, DaemonSet, Job, probes'],['Red','Service, DNS, Gateway API, NetworkPolicy'],['Configuración e identidad','Secrets, External Secrets, RBAC'],['Scheduling y nodos','Requests, Pending, drain, PDB, prioridad'],['Helm y GitOps','Charts, Argo CD, bump como la CI'],['Almacenamiento y nube','PVC, volúmenes por zona, Terraform'],['Observabilidad','Prometheus, Grafana, alertas'],['Operación','Método de diagnóstico, cinco averías'],['Plataforma de inferencia','Servidor de modelos, LiteLLM, tenants, fallback, averías']] }
 }[LANG === 'es' ? 'es' : 'en'];
 document.documentElement.lang = LANG;
 document.title = L.title;
 const done = i => Boolean(PROGRESS[String(i)]);
-const count = [1,2,3,4,5,6,7,8,9].filter(done).length;
-const next = [1,2,3,4,5,6,7,8,9].find(i => !done(i));
+const count = [1,2,3,4,5,6,7,8,9,10].filter(done).length;
+const next = [1,2,3,4,5,6,7,8,9,10].find(i => !done(i));
 document.getElementById('title').textContent = L.title;
 document.getElementById('sub').textContent = L.sub(count);
-document.getElementById('bar').innerHTML = [1,2,3,4,5,6,7,8,9].map(i => `<i class="${done(i) ? 'on' : ''}"></i>`).join('');
+document.getElementById('bar').innerHTML = [1,2,3,4,5,6,7,8,9,10].map(i => `<i class="${done(i) ? 'on' : ''}"></i>`).join('');
 
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const S = 22, C = Math.cos(Math.PI / 6);
@@ -71,7 +71,7 @@ const BLUE = { t: '#2c4f73', l: '#1a2d42', r: '#213a55', s: '#6fb3ff' };
 let out = '';
 const pos = i => [i * 2.6, -i * 2.6]; // a staircase that rises left to right
 const all = [];
-for (let i = 1; i <= 9; i++) {
+for (let i = 1; i <= 10; i++) {
   const [x, y] = pos(i - 1), h = 0.4 + i * 0.32;
   const c = done(i) ? GREEN : i === next ? BLUE : GREY;
   all.push(P(x, y, 0), P(x + 2.2, y + 2.2, 0), P(x, y, h + 2));

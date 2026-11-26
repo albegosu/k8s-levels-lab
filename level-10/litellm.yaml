@@ -1,0 +1,81 @@
+# LiteLLM proxy: the gateway every client talks to. One OpenAI-compatible URL,
+# virtual keys per tenant, budgets, rate limits, fallbacks and Prometheus metrics.
+# The master key (admin key, creates the tenants' keys) is in the Secret litellm and the
+# database password in the Secret postgres, both created by level-10/secrets.sh.
+apiVersion: v1
+kind: ConfigMap
+metadata: { name: litellm-config, namespace: inference }
+data:
+  config.yaml: |
+    model_list:
+      # Clients ask for "chat". The gateway decides which server answers.
+      - model_name: chat
+        litellm_params:
+          model: openai/qwen2.5-0.5b              # "openai/" = any OpenAI-compatible server
+          api_base: http://qwen.inference:8080/v1
+          api_key: none
+          # Self-hosted models cost nothing per token; a made-up price lets budgets move.
+          input_cost_per_token: 0.0001
+          output_cost_per_token: 0.0002
+      - model_name: chat-backup
+        litellm_params:
+          model: openai/qwen2.5-0.5b
+          api_base: http://qwen-backup.inference:8080/v1
+          api_key: none
+          input_cost_per_token: 0.0001
+          output_cost_per_token: 0.0002
+    litellm_settings:
+      callbacks: ["prometheus"]
+      request_timeout: 60
+    router_settings:
+      fallbacks: [{"chat": ["chat-backup"]}]   # if "chat" fails, retry on chat-backup
+      num_retries: 0
+    general_settings:
+      master_key: os.environ/LITELLM_MASTER_KEY
+      database_url: os.environ/DATABASE_URL
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: litellm, namespace: inference, labels: { app: litellm } }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: litellm } }
+  template:
+    metadata: { labels: { app: litellm } }
+    spec:
+      nodeSelector: { role: system }
+      containers:
+        - name: litellm
+          image: ghcr.io/berriai/litellm:v1.111.0
+          args: [--config, /app/config.yaml, --port, "4000"]
+          env:
+            - name: LITELLM_MASTER_KEY
+              valueFrom: { secretKeyRef: { name: litellm, key: LITELLM_MASTER_KEY } }
+            - name: POSTGRES_PASSWORD
+              valueFrom: { secretKeyRef: { name: postgres, key: password } }
+            # $(VAR) is expanded by Kubernetes from the variables defined above.
+            - name: DATABASE_URL
+              value: postgresql://litellm:$(POSTGRES_PASSWORD)@postgres.inference:5432/litellm
+          ports: [{ name: http, containerPort: 4000 }]
+          volumeMounts:
+            - { name: config, mountPath: /app/config.yaml, subPath: config.yaml }
+          readinessProbe:
+            httpGet: { path: /health/readiness, port: http }
+            periodSeconds: 10
+          startupProbe:
+            httpGet: { path: /health/liveliness, port: http }
+            periodSeconds: 5
+            failureThreshold: 60
+          resources:
+            requests: { cpu: 200m, memory: 512Mi }
+            limits: { memory: 1536Mi }
+      volumes:
+        - name: config
+          configMap: { name: litellm-config }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: litellm, namespace: inference, labels: { app: litellm } }
+spec:
+  selector: { app: litellm }
+  ports: [{ name: http, port: 4000, targetPort: http }]
